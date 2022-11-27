@@ -4,37 +4,37 @@ from func.function import *
 
 
 @logger.catch
-async def create_mes_task(task):
-    mes = f'<b><u>{task.title}</u></b>'
-    mes += f'\n<b><i>Описание:</i></b>'
-    mes += f'\n{task.description}'
-    mes += f'\n<b><i>Исполнители:</i></b>' if len(task.for_user) > 1 else f'\n<b><i>Исполнитель:</i></b>'
-    if len(task.for_user) > 0:
-        for i in task.for_user:
-            mes += f'\n\t{i.user.name}'
-    mes += f'\n<b><i>Добавлена:</i></b>'
-    mes += f' {task.date_create.strftime("%d.%m.%Y %H:%M")}'
-    mes += f'\n<b><i>Срок выполнения:</i></b>'
-    if task.date_end:
-        mes += f' {task.date_end.strftime("%d.%m.%Y")}'
-    mes += f'\n<b><i>Выполнено:</i></b>'
+async def create_mes_task(task, description=False):
+    mes = f'Выполнено:'
     done = emojize(':check_mark_button:') if task.completed else emojize(':cross_mark:')
     mes += f' {done}'
-    if task.completed:
-        mes += f'\n{task.date_complete.strftime("%d.%m.%Y %H:%M")}'
+    mes += f'\n<b><u>{task.title}</u></b>'
+    mes += f'\nКому назначено:'
+    if len(task.for_user) > 0:
+        mes += f' <b><i>{task.for_user[0].user.name}</i></b>'
+    mes += f'\nСрок:'
+    if task.date_end:
+        mes += f' <b><i>{task.date_end.strftime("%d.%m.%Y")}</i></b>'
+    if description:
+        mes += f'\nОписание:'
+        mes += f'\n<b><i>{task.description}</i></b>'
     return mes
 
 
 @logger.catch
-async def create_kb_task(task, user_id, page=0):
+async def create_kb_task(task, user_id, page=0, description=False):
     user = await get_user(user_id)
     kb_task = InlineKeyboardMarkup(row_width=4)
     btn_complete = InlineKeyboardButton(text=emojize('Готово!:check_mark_button:'),
                                         callback_data=cb_type_edit_task.new(task_id=task.id, type_edit='compl', page=page))
-    btn_show_desc = InlineKeyboardButton(text=emojize(':magnifying_glass_tilted_right::cross_mark_button::memo:'),
-                                         callback_data=cb_show_comment.new(task_id=task.id))
+    if not description:
+        btn_show_desc = InlineKeyboardButton(text=emojize(':magnifying_glass_tilted_right::memo:'),
+                                             callback_data=cb_show_desc.new(task_id=task.id, page=page))
+    else:
+        btn_show_desc = InlineKeyboardButton(text=emojize(':cross_mark_button::memo:'),
+                                             callback_data=cb_not_show_desc.new(task_id=task.id, page=page))
     btn_show_comment = InlineKeyboardButton(text=emojize(':speech_balloon:'),
-                                            callback_data=cb_show_desc.new(task_id=task.id))
+                                            callback_data=cb_show_comment.new(task_id=task.id))
     btn_edit_title = InlineKeyboardButton(text=emojize(':wrench::notebook:'),
                                           callback_data=cb_type_edit_task.new(task_id=task.id, type_edit='title', page=page))
     btn_edit_desc = InlineKeyboardButton(text=emojize(':wrench::memo:'),
@@ -43,7 +43,6 @@ async def create_kb_task(task, user_id, page=0):
                                          callback_data=cb_type_edit_task.new(task_id=task.id, type_edit='date', page=page))
     btn_add_user = InlineKeyboardButton(text=emojize(':wrench::face_with_monocle:'),
                                         callback_data=cb_type_edit_task.new(task_id=task.id, type_edit='add_user', page=page))
-    # btn_edit_task = InlineKeyboardButton(text='Редактировать', callback_data=cb_edit_task.new(task_id=task.id))
     btn_del_task = InlineKeyboardButton(text=emojize(':wastebasket:'), callback_data=cb_del_task.new(task_id=task.id))
     btn_back_tasks = InlineKeyboardButton(text=emojize(':BACK_arrow:Назад'),
                                           callback_data=cb_back_task.new(chat_id=task.chat_id, page=page))
@@ -58,7 +57,8 @@ async def create_kb_task(task, user_id, page=0):
                 kb_task.insert(btn_complete)
     kb_task.insert(btn_show_desc).insert(btn_show_comment)
     if user.super_admin or task.user_id_create == user_id or await check_admin_chat(task.chat_id, user_id):
-        kb_task.row(btn_edit_title, btn_edit_desc, btn_edit_date, btn_add_user)
+        if not task.completed:
+            kb_task.row(btn_edit_title, btn_edit_desc, btn_edit_date, btn_add_user)
     kb_task.row(btn_del_task, btn_back_tasks)
     return kb_task
 
@@ -115,6 +115,13 @@ async def update_desc_task(task, text):
 
 
 @logger.catch
+async def update_title_task(task, text):
+    session.query(Task).filter(Task.id == task.id).update({'date_edit': datetime.datetime.now(tz=tz),
+                                                           'title': text}, synchronize_session='fetch')
+    session.commit()
+
+
+@logger.catch
 async def update_date_end_task(task, date):
     session.query(Task).filter(Task.id == task.id).update({'date_edit': datetime.datetime.now(tz=tz),
                                                            'date_end': date}, synchronize_session='fetch')
@@ -122,27 +129,16 @@ async def update_date_end_task(task, date):
 
 
 @logger.catch
-async def create_kb_add_user(task):
+async def create_kb_add_user(task, page):
     kb_add_user = InlineKeyboardMarkup(row_width=1)
     list_user_id = await get_list_user_id_task(task)
     for part in task.chat.participants:
         if part.user.t_id not in list_user_id:
             kb_add_user.insert(InlineKeyboardButton(text=part.user.name,
                                                     callback_data=cb_add_user_task.new(task_id=task.id,
-                                                                                       user_id=part.user.t_id)))
+                                                                                       user_id=part.user.t_id,
+                                                                                       page=page)))
     return kb_add_user
-
-
-@logger.catch
-async def create_kb_del_user(task):
-    kb_del_user = InlineKeyboardMarkup(row_width=1)
-    list_user_id = await get_list_user_id_task(task)
-    for part in task.chat.participants:
-        if part.user.t_id in list_user_id:
-            kb_del_user.insert(InlineKeyboardButton(text=part.user.name,
-                                                    callback_data=cb_del_user_task.new(task_id=task.id,
-                                                                                       user_id=part.user.t_id)))
-    return kb_del_user
 
 
 @logger.catch
@@ -152,6 +148,7 @@ async def get_list_user_id_task(task):
 
 @logger.catch
 async def add_user_task_db(task_id, user_id):
+    session.query(TaskForUser).filter(TaskForUser.task_id == task_id).delete()
     new_task_for_user = TaskForUser(task_id=task_id, user_id=user_id)
     session.add(new_task_for_user)
     session.commit()

@@ -19,7 +19,7 @@ async def create_show_tasks_kb(chat, page=0):
     if page > 0:
         kb_task.row(InlineKeyboardButton(text='<<', callback_data=cb_page_list_task.new(chat_id=chat.chat_id, page=page - 1)))
     kb_task.insert(btn_new_task)
-    if page < int((await get_count_tasks(chat)) / 10):
+    if page < (await get_count_tasks(chat) - 1) // 10:
         kb_task.insert(InlineKeyboardButton(text='>>', callback_data=cb_page_list_task.new(chat_id=chat.chat_id, page=page + 1)))
     kb_task.row(btn_excel_task).row(btn_back_chat_task)
     return kb_task
