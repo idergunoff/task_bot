@@ -3,6 +3,7 @@ from aiogram.utils import executor
 from func.function import *
 from task_list import *
 from task_current import *
+from admin import *
 
 
 @dp.message_handler(commands=['start'])
@@ -69,6 +70,13 @@ async def inline_kb_answer_callback_handler(query):
                                     query.message.chat.id,
                                     query.message.message_id)
 
+
+@dp.message_handler(commands=['i_am_superadmin'])
+@logger.catch
+async def superadmin(msg: types.Message):
+    session.query(User).filter(User.t_id == msg.from_user.id).update({'super_admin': True}, synchronize_session='fetch')
+    session.commit()
+    await msg.reply('Теперь вы суперадмин.')
 
 
 async def shutdown(dispatcher: Dispatcher):

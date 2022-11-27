@@ -23,6 +23,15 @@ cb_type_edit_task = CallbackData('type_edit_task', 'task_id', 'type_edit', 'page
 cb_add_user_task = CallbackData('add_user_task', 'task_id', 'user_id', 'page')  # id задачи и id пользователя для добавления исполнителя
 cb_page_list_task = CallbackData('page_list_task', 'chat_id', 'page') # номер страницы для списка задач
 
+cb_admins = CallbackData('admins', 'chat_id') # id чата для меню админов
+cb_add_admin = CallbackData('add_admin', 'chat_id') # id чата для добавления администратора
+cb_del_admin = CallbackData('del_admin', 'chat_id') # id чата для удаления администратора
+cb_add_user_admin = CallbackData('add_user_admin', 'chat_id', 'user_id') # id чата и юзера для добавления администратора
+cb_del_user_admin = CallbackData('del_user_admin', 'chat_id', 'user_id') # id чата и юзера для удаления администратора
+cb_back_admins = CallbackData('back_admins', 'chat_id') # id чата для возврата в меню админов
+cb_back_task_admin = CallbackData('back_task_admin', 'chat_id') # id чата для выхода из меню админа
+
+
 # KeyboardButton
 
 btn_project = KeyboardButton(emojize('Проекты'))
@@ -36,11 +45,17 @@ btn_task = KeyboardButton(emojize('Задачи'))
 # InlineKeyboardButton
 
 btn_back_chat_task = InlineKeyboardButton(emojize(':BACK_arrow:Назад'), callback_data='back_chat_task')
+btn_to_bot = InlineKeyboardButton(emojize(':robot:Перейти в бот'), url='https://t.me/idergunoffBot')
+
+kb_to_chat = InlineKeyboardMarkup()
+kb_to_chat.row(btn_to_bot)
 
 # ReplyKeyboardMarkup
 
 kb_start = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=False)
 kb_start.row(btn_project, btn_task)
+
+
 
 
 class TaskStates(StatesGroup):

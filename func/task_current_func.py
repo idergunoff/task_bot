@@ -63,36 +63,6 @@ async def create_kb_task(task, user_id, page=0, description=False):
     return kb_task
 
 
-# @logger.catch
-# async def create_kb_edit_task(task):
-#     kb_edit_task = InlineKeyboardMarkup(row_width=1)
-#     btn_edit_desc = InlineKeyboardButton(text='Описание',
-#                                          callback_data=cb_type_edit_task.new(task_id=task.id, type_edit='desc'))
-#     btn_edit_date = InlineKeyboardButton(text='Сроки',
-#                                          callback_data=cb_type_edit_task.new(task_id=task.id, type_edit='date'))
-#     btn_add_user = InlineKeyboardButton(text=emojize(':plus:исполнитель'),
-#                                         callback_data=cb_type_edit_task.new(task_id=task.id, type_edit='add_user'))
-#     btn_del_user = InlineKeyboardButton(text=emojize(':minus:исполнитель'),
-#                                         callback_data=cb_type_edit_task.new(task_id=task.id, type_edit='del_user'))
-#     if task.completed:
-#         btn_complete = InlineKeyboardButton(text=emojize('Не выполнено:cross_mark:'),
-#                                             callback_data=cb_type_edit_task.new(task_id=task.id, type_edit='no_compl'))
-#     else:
-#         btn_complete = InlineKeyboardButton(text=emojize('Выполнено:check_mark_button:'),
-#                                             callback_data=cb_type_edit_task.new(task_id=task.id, type_edit='compl'))
-#     btn_back_task = InlineKeyboardButton(text=emojize(':BACK_arrow:Назад'),
-#                                          callback_data=cb_type_edit_task.new(task_id=task.id, type_edit='back'))
-#     kb_edit_task.row(btn_complete).row(btn_edit_desc, btn_edit_date)
-#     if len(task.chat.participants) > len(task.for_user) > 0:
-#         kb_edit_task.row(btn_add_user, btn_del_user)
-#     elif len(task.for_user) == len(task.chat.participants):
-#         kb_edit_task.row(btn_del_user)
-#     else:
-#         kb_edit_task.row(btn_add_user)
-#     kb_edit_task.row(btn_back_task)
-#     return kb_edit_task
-
-
 @logger.catch
 async def edit_complete(task, completed):
     session.query(Task).filter(Task.id == task.id).update({'completed': completed, 'date_complete':
@@ -164,4 +134,43 @@ async def del_user_task_db(task_id, user_id):
 async def add_title_task(task, title):
     session.query(Task).filter(Task.id == task.id).update({'title': title, 'date_edit': datetime.datetime.now(tz=tz)},
                                                           synchronize_session='fetch')
+    session.commit()
+
+
+@logger.catch
+async def check_show_chat(task):
+    if task.show_chat:
+        return False
+    else:
+        if task.description and task.date_end and len(task.for_user) > 0:
+            return True
+        else:
+            return False
+
+
+@logger.catch
+async def create_mes_task_to_chat(task):
+    mes = f'<b>{task.user_create.name}</b> добавил задачу:'
+    mes += await create_mes_task_for_chat(task)
+    return mes
+
+
+@logger.catch
+async def create_mes_task_for_chat(task):
+    mes = f'\n\n<b><u>{task.title}</u></b>'
+    mes += f'\nКому назначено:'
+    if len(task.for_user) > 0:
+        mes += f' <b><i>{task.for_user[0].user.name}</i></b>'
+    mes += f'\nСрок:'
+    if task.date_end:
+        mes += f' <b><i>{task.date_end.strftime("%d.%m.%Y")}</i></b>'
+    if task.description:
+        mes += f'\nОписание:'
+        mes += f'\n<b><i>{task.description}</i></b>'
+    return mes
+
+
+@logger.catch
+async def update_show_chat(task):
+    session.query(Task).filter(Task.id == task.id).update({'show_chat': True}, synchronize_session='fetch')
     session.commit()

@@ -26,17 +26,6 @@ async def show_task(call: types.CallbackQuery, callback_data: dict):
     await call.answer()
 
 
-# @dp.callback_query_handler(cb_edit_task.filter())
-# @logger.catch
-# async def edit_task(call: types.CallbackQuery, callback_data: dict):
-#     task = await get_task(callback_data['task_id'])
-#     kb_task_edit = await create_kb_edit_task(task)
-#     mes = await create_mes_task(task)
-#     mes += '\n\n<b><i><u>Редактирование</u></i></b>'
-#     await call.message.edit_text(mes, reply_markup=kb_task_edit)
-#     await call.answer()
-
-
 @dp.callback_query_handler(cb_type_edit_task.filter())
 @logger.catch
 async def type_edit_task(call: types.CallbackQuery, callback_data: dict, state: FSMContext):
@@ -49,6 +38,10 @@ async def type_edit_task(call: types.CallbackQuery, callback_data: dict, state: 
         mes = await create_mes_task(task)
         await call.message.edit_text(mes, reply_markup=kb_task_edit)
         await call.answer()
+        user = await get_user(call.from_user.id)
+        mes = emojize(f':check_mark_button: <b>{user.name}</b> сообщает о выполнении задачи:')
+        mes += await create_mes_task_for_chat(task)
+        await bot.send_message(task.chat_id, mes, reply_markup=kb_to_chat)
     if type_edit == 'desc':
         await TaskStates.EDIT_DESC_TASK.set()
         await state.update_data(page=callback_data['page'])
@@ -84,6 +77,14 @@ async def edit_desc_task(msg: types.Message, state: FSMContext):
     mes = '<i>Описание изменено</i>\n\n'
     mes += await create_mes_task(task)
     await bot.send_message(msg.from_user.id, mes, reply_markup=kb_task_edit)
+    if task.show_chat:
+        user = await get_user(msg.from_user.id)
+        mes = emojize(f'<b>{user.name}</b> изменил описание задачи:')
+        mes += await create_mes_task_for_chat(task)
+        await bot.send_message(task.chat_id, mes, reply_markup=kb_to_chat)
+    if await check_show_chat(task):
+        await bot.send_message(task.chat_id, await create_mes_task_to_chat(task), reply_markup=kb_to_chat)
+        await update_show_chat(task)
 
 
 @dp.message_handler(state=TaskStates.EDIT_TITLE_TASK)
@@ -97,6 +98,14 @@ async def edit_title_task(msg: types.Message, state: FSMContext):
     mes = '<i>Название задачи изменено</i>\n\n'
     mes += await create_mes_task(task)
     await bot.send_message(msg.from_user.id, mes, reply_markup=kb_task_edit)
+    if task.show_chat:
+        user = await get_user(msg.from_user.id)
+        mes = emojize(f'<b>{user.name}</b> изменил название задачи:')
+        mes += await create_mes_task_for_chat(task)
+        await bot.send_message(task.chat_id, mes, reply_markup=kb_to_chat)
+    if await check_show_chat(task):
+        await bot.send_message(task.chat_id, await create_mes_task_to_chat(task), reply_markup=kb_to_chat)
+        await update_show_chat(task)
 
 
 @dp.callback_query_handler(DetailedTelegramCalendar.func(), state=TaskStates.EDIT_DATE_TASK)
@@ -115,6 +124,14 @@ async def edit_date_task(call: types.CallbackQuery, state: FSMContext):
         mes += await create_mes_task(task)
         await call.message.edit_text(mes, reply_markup=kb_task_edit)
         await call.answer()
+        if task.show_chat:
+            user = await get_user(call.from_user.id)
+            mes = emojize(f'<b>{user.name}</b> изменил сроки выполнения задачи:')
+            mes += await create_mes_task_for_chat(task)
+            await bot.send_message(task.chat_id, mes, reply_markup=kb_to_chat)
+        if await check_show_chat(task):
+            await bot.send_message(task.chat_id, await create_mes_task_to_chat(task), reply_markup=kb_to_chat)
+            await update_show_chat(task)
 
 
 @dp.callback_query_handler(cb_add_user_task.filter())
@@ -127,6 +144,14 @@ async def add_user_task(call: types.CallbackQuery, callback_data: dict):
     mes += await create_mes_task(task)
     await call.message.edit_text(mes, reply_markup=kb_task_edit)
     await call.answer()
+    if task.show_chat:
+        user = await get_user(call.from_user.id)
+        mes = emojize(f'<b>{user.name}</b> изменил исполнителя задачи:')
+        mes += await create_mes_task_for_chat(task)
+        await bot.send_message(task.chat_id, mes, reply_markup=kb_to_chat)
+    if await check_show_chat(task):
+        await bot.send_message(task.chat_id, await create_mes_task_to_chat(task), reply_markup=kb_to_chat)
+        await update_show_chat(task)
 
 
 @dp.callback_query_handler(cb_show_desc.filter())

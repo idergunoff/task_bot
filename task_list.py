@@ -1,6 +1,5 @@
 import openpyxl
 
-import bot
 from func.task_list_func import *
 
 
@@ -18,6 +17,8 @@ async def push_task(msg: types.Message):
             await msg.reply('Не однин ваш чат не зарегистрирован в "TaskBot"')
         else:
             kb_task = await create_show_tasks_kb(user.participants[0].chat, task_list=user.task_list)
+            if user.super_admin:
+                kb_task.insert(InlineKeyboardButton('Админы', callback_data=cb_admins.new(chat_id=user.participants[0].chat.chat_id)))
             mes = await create_show_tasks_mes(user.participants[0].chat, msg.from_user.id, task_list=user.task_list)
             await bot.send_message(msg.from_user.id, mes, reply_markup=kb_task)
     else:
@@ -30,6 +31,9 @@ async def choose_chat_for_task(call: types.CallbackQuery, callback_data: dict):
     user = await get_user(call.from_user.id)
     chat = await get_chat(callback_data['chat_id'])
     kb_task = await create_show_tasks_kb(chat, task_list=user.task_list)
+    if user.super_admin:
+        kb_task.insert(InlineKeyboardButton('Админы',
+                       callback_data=cb_admins.new(chat_id=chat.chat_id)))
     mes = await create_show_tasks_mes(chat, call.from_user.id, task_list=user.task_list)
     await call.message.edit_text(emojize(mes), reply_markup=kb_task)
     await call.answer()
@@ -60,6 +64,9 @@ async def back_task(call: types.CallbackQuery, callback_data: dict):
     user = await get_user(call.from_user.id)
     chat = await get_chat(callback_data['chat_id'])
     kb_task = await create_show_tasks_kb(chat, int(callback_data['page']), task_list=user.task_list)
+    if user.super_admin:
+        kb_task.insert(InlineKeyboardButton('Админы',
+                       callback_data=cb_admins.new(chat_id=chat.chat_id)))
     mes = await create_show_tasks_mes(chat, call.from_user.id, int(callback_data['page']), task_list=user.task_list)
     await call.message.edit_text(mes, reply_markup=kb_task)
     await call.answer()
@@ -71,6 +78,9 @@ async def page_task(call: types.CallbackQuery, callback_data: dict):
     user = await get_user(call.from_user.id)
     chat = await get_chat(callback_data['chat_id'])
     kb_task = await create_show_tasks_kb(chat, page=int(callback_data['page']), task_list=user.task_list)
+    if user.super_admin:
+        kb_task.insert(InlineKeyboardButton('Админы',
+                       callback_data=cb_admins.new(chat_id=chat.chat_id)))
     mes = await create_show_tasks_mes(chat, call.from_user.id, page=int(callback_data['page']), task_list=user.task_list)
     await call.message.edit_text(mes, reply_markup=kb_task)
     await call.answer()
@@ -84,10 +94,15 @@ async def del_task(call: types.CallbackQuery, callback_data: dict):
     chat, title = task.chat, task.title
     await del_task_by_id(callback_data['task_id'])
     kb_task = await create_show_tasks_kb(chat, task_list=user.task_list)
+    if user.super_admin:
+        kb_task.insert(InlineKeyboardButton('Админы',
+                       callback_data=cb_admins.new(chat_id=chat.chat_id)))
     mes = emojize(f'Задача <b>{title}</b> удалена.\n')
     mes += await create_show_tasks_mes(chat, call.from_user.id, task_list=user.task_list)
     await call.message.edit_text(emojize(mes), reply_markup=kb_task)
     await call.answer()
+    mes = f'<b>{user.name}</b> удалил задачу <u><b>{title}</b></u>'
+    await bot.send_message(chat.chat_id, mes, reply_markup=kb_to_chat)
 
 
 @dp.callback_query_handler(cb_week_tasks.filter())

@@ -27,7 +27,8 @@ async def create_show_tasks_kb(chat, page=0, task_list='all'):
     kb_task.insert(btn_new_task)
     if page < (await get_count_tasks(chat, task_list) - 1) // 10:
         kb_task.insert(InlineKeyboardButton(text='>>', callback_data=cb_page_list_task.new(chat_id=chat.chat_id, page=page + 1)))
-    kb_task.row(btn_week_task, btn_month_task, btn_all_task, btn_excel_task).row(btn_back_chat_task)
+    kb_task.row(btn_week_task, btn_month_task, btn_all_task, btn_excel_task)
+    kb_task.row(btn_back_chat_task)
     return kb_task
 
 
