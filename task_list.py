@@ -17,8 +17,8 @@ async def push_task(msg: types.Message):
         elif len(user.participants) < 1:
             await msg.reply('Не однин ваш чат не зарегистрирован в "TaskBot"')
         else:
-            kb_task = await create_show_tasks_kb(user.participants[0].chat)
-            mes = await create_show_tasks_mes(user.participants[0].chat, msg.from_user.id)
+            kb_task = await create_show_tasks_kb(user.participants[0].chat, task_list=user.task_list)
+            mes = await create_show_tasks_mes(user.participants[0].chat, msg.from_user.id, task_list=user.task_list)
             await bot.send_message(msg.from_user.id, mes, reply_markup=kb_task)
     else:
         await msg.reply('Не однин ваш чат не зарегистрирован в "TaskBot"')
@@ -27,9 +27,10 @@ async def push_task(msg: types.Message):
 @dp.callback_query_handler(cb_chat_task.filter())
 @logger.catch
 async def choose_chat_for_task(call: types.CallbackQuery, callback_data: dict):
+    user = await get_user(call.from_user.id)
     chat = await get_chat(callback_data['chat_id'])
-    kb_task = await create_show_tasks_kb(chat)
-    mes = await create_show_tasks_mes(chat, call.from_user.id)
+    kb_task = await create_show_tasks_kb(chat, task_list=user.task_list)
+    mes = await create_show_tasks_mes(chat, call.from_user.id, task_list=user.task_list)
     await call.message.edit_text(emojize(mes), reply_markup=kb_task)
     await call.answer()
 
@@ -56,19 +57,21 @@ async def back_chat_for_task(call: types.CallbackQuery):
 @dp.callback_query_handler(cb_back_task.filter())
 @logger.catch
 async def back_task(call: types.CallbackQuery, callback_data: dict):
+    user = await get_user(call.from_user.id)
     chat = await get_chat(callback_data['chat_id'])
-    kb_task = await create_show_tasks_kb(chat, int(callback_data['page']))
-    mes = await create_show_tasks_mes(chat, call.from_user.id, int(callback_data['page']))
+    kb_task = await create_show_tasks_kb(chat, int(callback_data['page']), task_list=user.task_list)
+    mes = await create_show_tasks_mes(chat, call.from_user.id, int(callback_data['page']), task_list=user.task_list)
     await call.message.edit_text(mes, reply_markup=kb_task)
     await call.answer()
 
 
 @dp.callback_query_handler(cb_page_list_task.filter())
 @logger.catch
-async def back_task(call: types.CallbackQuery, callback_data: dict):
+async def page_task(call: types.CallbackQuery, callback_data: dict):
+    user = await get_user(call.from_user.id)
     chat = await get_chat(callback_data['chat_id'])
-    kb_task = await create_show_tasks_kb(chat, page=int(callback_data['page']))
-    mes = await create_show_tasks_mes(chat, call.from_user.id, page=int(callback_data['page']))
+    kb_task = await create_show_tasks_kb(chat, page=int(callback_data['page']), task_list=user.task_list)
+    mes = await create_show_tasks_mes(chat, call.from_user.id, page=int(callback_data['page']), task_list=user.task_list)
     await call.message.edit_text(mes, reply_markup=kb_task)
     await call.answer()
 
@@ -76,13 +79,38 @@ async def back_task(call: types.CallbackQuery, callback_data: dict):
 @dp.callback_query_handler(cb_del_task.filter())
 @logger.catch
 async def del_task(call: types.CallbackQuery, callback_data: dict):
+    user = await get_user(call.from_user.id)
     task = await get_task(callback_data['task_id'])
     chat, title = task.chat, task.title
     await del_task_by_id(callback_data['task_id'])
-    kb_task = await create_show_tasks_kb(chat)
+    kb_task = await create_show_tasks_kb(chat, task_list=user.task_list)
     mes = emojize(f'Задача <b>{title}</b> удалена.\n')
-    mes += await create_show_tasks_mes(chat, call.from_user.id)
+    mes += await create_show_tasks_mes(chat, call.from_user.id, task_list=user.task_list)
     await call.message.edit_text(emojize(mes), reply_markup=kb_task)
+    await call.answer()
+
+
+@dp.callback_query_handler(cb_week_tasks.filter())
+@logger.catch
+async def week_task(call: types.CallbackQuery, callback_data: dict):
+    await update_task_list(call.from_user.id, 'week')
+    await choose_chat_for_task(call=call, callback_data=callback_data)
+    await call.answer()
+
+
+@dp.callback_query_handler(cb_month_tasks.filter())
+@logger.catch
+async def month_task(call: types.CallbackQuery, callback_data: dict):
+    await update_task_list(call.from_user.id, 'month')
+    await choose_chat_for_task(call=call, callback_data=callback_data)
+    await call.answer()
+
+
+@dp.callback_query_handler(cb_all_tasks.filter())
+@logger.catch
+async def all_task(call: types.CallbackQuery, callback_data: dict):
+    await update_task_list(call.from_user.id, 'all')
+    await choose_chat_for_task(call=call, callback_data=callback_data)
     await call.answer()
 
 

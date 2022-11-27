@@ -29,6 +29,7 @@ class User(Base):
     t_id = Column(BigInteger, primary_key=True)
     name = Column(String)
     super_admin = Column(Boolean, default=False)
+    task_list = Column(String, default='all')
 
     participants = relationship('Participant', back_populates='user')
     task_create = relationship('Task', back_populates='user_create')

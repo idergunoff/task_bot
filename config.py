@@ -19,8 +19,6 @@ tz = pytz.timezone('Europe/Moscow')
 TOKEN = '5590505820:AAHdJNYfpJGiAmOfh8SRbFdpDWK9VdjDCZE' # тест
 # TOKEN = '5802077316:AAGU7w5zuLeC8ZvK5IRaglC6sgci_UnkI2o' # PlanTaskBot
 
-
-
 session = Session()
 
 logger.add("file_{time}.log", format="{time} - {level} - {message}", level="TRACE", rotation="7 day")
