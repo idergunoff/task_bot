@@ -77,13 +77,30 @@ async def del_task_by_id(task_id):
 @logger.catch
 async def get_excel_task(chat_id):
     task_pd = pd.read_sql(session.query(Task).filter(Task.chat_id == chat_id).statement, engine)
-    task_pd = task_pd.drop(task_pd.columns[[0, 1, 5, 8]], axis=1)
-    task_pd = task_pd.rename(columns={'title': 'Задача', 'description': 'Описание', 'date_create': 'Дата создания',
-                                      'date_end': 'Срок выполнения', 'user_id_create': 'Автор задачи',
-                                      'completed': 'Выполнено', 'date_complete': 'Дата выполнения'})
+    task_pd = task_pd.drop(task_pd.columns[[0, 1, 5, 8, 9, 12]], axis=1)
+    task_pd = task_pd.rename(columns={'title': 'Задача', 'description': 'Описание', 'user_id_create': 'Автор задачи',
+                                      'completed': 'Выполнено'})
+    list_date_create, list_date_end, list_date_complete = [], [], []
     for i in range(len(task_pd['Автор задачи'])):
+        if task_pd['Выполнено'][i]:
+            task_pd['Выполнено'][i] = 'Выполнено'
+        else:
+            task_pd['Выполнено'][i] = 'Не выполнено'
+
         user = await get_user(int(task_pd['Автор задачи'][i]))
         task_pd['Автор задачи'][i] = user.name
+
+        list_date_create.append(task_pd['date_create'][i].strftime("%d.%m.%Y %H:%M"))
+        try:
+            list_date_end.append(task_pd['date_end'][i].strftime("%d.%m.%Y"))
+        except ValueError:
+            list_date_end.append(None)
+        try:
+            list_date_complete.append(task_pd['date_complete'][i].strftime("%d.%m.%Y %H:%M"))
+        except ValueError:
+            list_date_complete.append(None)
+    task_pd['Дата создания'], task_pd['Срок выполнения'], task_pd['Дата выполнения'] = list_date_create, list_date_end, list_date_complete
+    task_pd = task_pd.drop(task_pd.columns[[2, 3, 6]], axis=1)
     return task_pd
 
 

@@ -1,4 +1,5 @@
 import openpyxl
+from openpyxl.styles import PatternFill, Color
 
 from func.task_list_func import *
 
@@ -135,6 +136,29 @@ async def excel_task(call: types.CallbackQuery, callback_data: dict):
     task_pd = await get_excel_task(callback_data['chat_id'])
     task_pd.to_excel('task.xlsx')
     wb = openpyxl.load_workbook('task.xlsx')
+    sheet = wb.active
+    for col in sheet.columns:
+        max_length = 0
+        column = col[0].column_letter  # Get the column name
+        for cell in col:
+            try:  # Necessary to avoid error on empty cells
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        adjusted_width = (max_length + 2)
+        sheet.column_dimensions[column].width = adjusted_width
+    # cell.fill = PatternFill("solid", fgColor="DDDDDD")
+    rows = sheet.max_row
+    cols = sheet.max_column
+
+    for i in range(1, rows + 1):
+        if sheet.cell(row=i, column=5).value == 'Выполнено':
+            for j in range(1, cols + 1):
+                sheet.cell(row=i, column=j).fill = PatternFill("solid", fgColor="98FB98")
+        else:
+            for j in range(1, cols + 1):
+                sheet.cell(row=i, column=j).fill = PatternFill("solid", fgColor="F08080")
     wb.save('task.xlsx')
     await bot.send_document(call.from_user.id, open('task.xlsx', 'rb'))
     await call.answer()
