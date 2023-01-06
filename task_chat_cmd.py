@@ -182,3 +182,49 @@ async def delete_task_by_id_cmd(msg: types.Message, state: FSMContext):
                 f'<b>{await get_username_msg(msg)}</b>, отправь id задачи для удаления.\n '
                                             f'Для отмены удаления задачи отправь /cancel'))
         logger.error(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" DELETE TASK no task')
+
+
+##################
+### Выполнено! ###
+##################
+
+
+@dp.message_handler(commands='done')
+@logger.catch
+async def done_task_cmd(msg: types.Message):
+    if msg.chat.id == msg.from_user.id:
+        await bot.send_message(msg.from_user.id, 'Данная команда предназначена только для группового чата.\nВ боте, '
+             'чтобы отметить задачу выполненной выберите чат, выберите задачу,  потом нажмите кнопку "Выполнено"')
+        logger.warning(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" PUSH done_task_cmd IN BOT')
+    else:
+        logger.info(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" PUSH done_task_cmd')
+        await registration(msg=msg)
+        await TaskStates.DONE_TASK.set()
+        await bot.send_message(msg.chat.id, f'<b>{await get_username_msg(msg)}</b>, отправь id задачи, чтобы ометить '
+                                            f'ее выполненной.\n Для отмены отправь /cancel')
+
+
+@dp.message_handler(state=TaskStates.DONE_TASK)
+@logger.catch
+async def delete_task_by_id_cmd(msg: types.Message, state: FSMContext):
+    user = await get_user(msg.from_user.id)
+    task = await get_task(msg.text)
+    if task and task.chat.chat_id == msg.chat.id:
+        title = task.title
+        await state.finish()
+        if user.super_admin or task.user_id_create == msg.from_user.id or \
+                await check_admin_chat(task.chat_id, msg.from_user.id) or msg.from_user.id == task.for_user[0].user_id:
+            await edit_complete(task, True)
+            await msg.reply(f'Задача <b>{title}</b> выполнена.')
+            logger.success(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" DONE TASK')
+        else:
+            await bot.send_message(
+                msg.chat.id,
+                emojize(f':warning:Внимание!!!:warning:\n<b>{await get_username_msg(msg)}</b>, вы не можете отметить '
+            f'выполненной эту задачу.\n Вы должны быть автором либо исполнителем задачи или модератором данного чата'))
+            logger.error(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" DONE TASK no privilege')
+    else:
+        await bot.send_message(msg.chat.id, emojize(f':warning:Внимание!!!:warning:\nЗадачи с таким id не существует.\n'
+                                            f'<b>{await get_username_msg(msg)}</b>, отправь id задачи, чтобы ометить '
+                                            f'ее выполненной.\n Для отмены отправь /cancel'))
+        logger.error(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" DONE TASK no task')
