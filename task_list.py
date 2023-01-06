@@ -40,17 +40,6 @@ async def choose_chat_for_task(call: types.CallbackQuery, callback_data: dict):
     await call.answer()
 
 
-@dp.callback_query_handler(cb_new_task.filter())
-@logger.catch
-async def new_task(call: types.CallbackQuery, callback_data: dict):
-    logger.info(f'USER "{call.from_user.id} - {await get_username_call(call)}" PUSH new_task')
-    await add_new_task(callback_data['chat_id'], call.from_user.id)
-    logger.success(f'USER "{call.from_user.id} - {await get_username_call(call)}" CREATE new_task')
-    await TaskStates.NEW_TASK.set()
-    await bot.send_message(call.from_user.id, 'Отправь название задачи.')
-    await call.answer()
-
-
 @dp.callback_query_handler(text='back_chat_task')
 @logger.catch
 async def back_chat_for_task(call: types.CallbackQuery):
@@ -133,9 +122,17 @@ async def all_task(call: types.CallbackQuery, callback_data: dict):
 @dp.callback_query_handler(cb_excel_tasks.filter())
 @logger.catch
 async def excel_task(call: types.CallbackQuery, callback_data: dict):
-    task_pd = await get_excel_task(callback_data['chat_id'])
-    task_pd.to_excel('task.xlsx')
-    wb = openpyxl.load_workbook('task.xlsx')
+    user = await get_user(call.from_user.id)
+    task_pd = await get_excel_task(callback_data['chat_id'], user.task_list)
+    chat = await get_chat(callback_data['chat_id'])
+    if user.task_list == 'week':
+        file_name = f'{chat.title}_Задачи за неделю.xlsx'
+    elif user.task_list == 'month':
+        file_name = f'{chat.title}_Задачи за месяц.xlsx'
+    else:
+        file_name = f'{chat.title}_Задачи.xlsx'
+    task_pd.to_excel(file_name)
+    wb = openpyxl.load_workbook(file_name)
     sheet = wb.active
     for col in sheet.columns:
         max_length = 0
@@ -148,10 +145,8 @@ async def excel_task(call: types.CallbackQuery, callback_data: dict):
                 pass
         adjusted_width = (max_length + 2)
         sheet.column_dimensions[column].width = adjusted_width
-    # cell.fill = PatternFill("solid", fgColor="DDDDDD")
     rows = sheet.max_row
     cols = sheet.max_column
-
     for i in range(1, rows + 1):
         if sheet.cell(row=i, column=5).value == 'Выполнено':
             for j in range(1, cols + 1):
@@ -159,6 +154,7 @@ async def excel_task(call: types.CallbackQuery, callback_data: dict):
         else:
             for j in range(1, cols + 1):
                 sheet.cell(row=i, column=j).fill = PatternFill("solid", fgColor="F08080")
-    wb.save('task.xlsx')
-    await bot.send_document(call.from_user.id, open('task.xlsx', 'rb'))
+
+    wb.save(file_name)
+    await bot.send_document(call.from_user.id, open(file_name, 'rb'))
     await call.answer()

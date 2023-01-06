@@ -21,6 +21,7 @@ cb_all_tasks = CallbackData('all_task', 'chat_id')  # id чата для пол�
 cb_edit_task = CallbackData('edit_task', 'task_id')  # id задачи для редактирования
 cb_type_edit_task = CallbackData('type_edit_task', 'task_id', 'type_edit', 'page')  # id задачи и тип редактирования
 cb_add_user_task = CallbackData('add_user_task', 'task_id', 'user_id', 'page')  # id задачи и id пользователя для добавления исполнителя
+cb_new_task_user = CallbackData('new_task_user', 'user_id') # id пользователя исполнителя новой задачи для cmd
 cb_page_list_task = CallbackData('page_list_task', 'chat_id', 'page') # номер страницы для списка задач
 
 cb_admins = CallbackData('admins', 'chat_id') # id чата для меню админов
@@ -45,7 +46,7 @@ btn_task = KeyboardButton(emojize('Задачи'))
 # InlineKeyboardButton
 
 btn_back_chat_task = InlineKeyboardButton(emojize(':BACK_arrow:Назад'), callback_data='back_chat_task')
-btn_to_bot = InlineKeyboardButton(emojize(':robot:Перейти в бот'), url='https://t.me/idergunoffBot')
+btn_to_bot = InlineKeyboardButton(emojize(':robot:Перейти в бот'), url='https://t.me/PlanTaskBot')
 
 kb_to_chat = InlineKeyboardMarkup()
 kb_to_chat.row(btn_to_bot)
@@ -56,10 +57,19 @@ kb_start = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=False)
 kb_start.row(btn_project, btn_task)
 
 
-
-
 class TaskStates(StatesGroup):
     NEW_TASK = State()
     EDIT_TITLE_TASK = State()
     EDIT_DESC_TASK = State()
     EDIT_DATE_TASK = State()
+
+    NEW_TASK_TITLE = State()
+    NEW_TASK_DESC = State()
+    NEW_TASK_DATE = State()
+    NEW_TASK_USER = State()
+
+    DELETE_TASK = State()
+    DONE_TASK = State()
+
+
+

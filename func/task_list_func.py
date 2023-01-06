@@ -59,12 +59,7 @@ async def create_show_chat_for_tasks_kb(user):
     return kb_chat
 
 
-@logger.catch
-async def add_new_task(chat_id, user_id):
-    new_task = Task(chat_id=chat_id, user_id_create=user_id, user_id_edit=user_id, date_create=datetime.datetime.now(tz=tz),
-                    date_edit=datetime.datetime.now(tz=tz))
-    session.add(new_task)
-    session.commit()
+
 
 
 @logger.catch
@@ -75,8 +70,17 @@ async def del_task_by_id(task_id):
 
 
 @logger.catch
-async def get_excel_task(chat_id):
-    task_pd = pd.read_sql(session.query(Task).filter(Task.chat_id == chat_id).statement, engine)
+async def get_excel_task(chat_id, task_list='all'):
+    if task_list == 'month':
+        start_date, stop_date = await start_stop_date('month')
+        task_pd = pd.read_sql(session.query(Task).filter(Task.chat_id == chat_id,
+                                      Task.date_end >= start_date, Task.date_end <= stop_date).order_by(Task.date_end).statement, engine)
+    elif task_list == 'week':
+        start_date, stop_date = await start_stop_date('week')
+        task_pd = pd.read_sql(session.query(Task).filter(Task.chat_id == chat_id,
+                                           Task.date_end >= start_date, Task.date_end <= stop_date).order_by(Task.date_end).statement, engine)
+    else:
+        task_pd = pd.read_sql(session.query(Task).filter(Task.chat_id == chat_id).order_by(Task.date_end).statement, engine)
     task_pd = task_pd.drop(task_pd.columns[[0, 1, 5, 8, 9, 12]], axis=1)
     task_pd = task_pd.rename(columns={'title': 'Задача', 'description': 'Описание', 'user_id_create': 'Автор задачи',
                                       'completed': 'Выполнено'})
@@ -89,15 +93,17 @@ async def get_excel_task(chat_id):
 
         user = await get_user(int(task_pd['Автор задачи'][i]))
         task_pd['Автор задачи'][i] = user.name
-
-        list_date_create.append(task_pd['date_create'][i].strftime("%d.%m.%Y %H:%M"))
+        try:
+            list_date_create.append(task_pd['date_create'][i].strftime("%d.%m.%Y %H:%M"))
+        except (ValueError, AttributeError):
+            list_date_create.append(None)
         try:
             list_date_end.append(task_pd['date_end'][i].strftime("%d.%m.%Y"))
-        except ValueError:
+        except (ValueError, AttributeError):
             list_date_end.append(None)
         try:
             list_date_complete.append(task_pd['date_complete'][i].strftime("%d.%m.%Y %H:%M"))
-        except ValueError:
+        except (ValueError, AttributeError):
             list_date_complete.append(None)
     task_pd['Дата создания'], task_pd['Срок выполнения'], task_pd['Дата выполнения'] = list_date_create, list_date_end, list_date_complete
     task_pd = task_pd.drop(task_pd.columns[[2, 3, 6]], axis=1)

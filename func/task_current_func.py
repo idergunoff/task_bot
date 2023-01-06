@@ -4,6 +4,42 @@ from func.function import *
 
 
 @logger.catch
+async def add_new_task(chat_id, user_id):
+    new_task = Task(
+        chat_id=chat_id,
+        user_id_create=user_id,
+        user_id_edit=user_id,
+        date_create=datetime.datetime.now(tz=tz),
+        date_edit=datetime.datetime.now(tz=tz)
+    )
+    session.add(new_task)
+    session.commit()
+
+
+@logger.catch
+async def add_new_task_cmd(chat_id, user_id, task_data, for_user_id):
+    new_task = Task(
+        chat_id=chat_id,
+        user_id_create=user_id,
+        user_id_edit=user_id,
+        date_create=datetime.datetime.now(tz=tz),
+        date_edit=datetime.datetime.now(tz=tz),
+        title=task_data['title'],
+        description=task_data['description'],
+        date_end=task_data['date_end']
+    )
+    session.add(new_task)
+    session.commit()
+    new_task_for_user = TaskForUser(
+        task_id=new_task.id,
+        user_id=for_user_id
+    )
+    session.add(new_task_for_user)
+    session.commit()
+    return new_task
+
+
+@logger.catch
 async def create_mes_task(task, description=False):
     mes = f'Выполнено:'
     done = emojize(':check_mark_button:') if task.completed else emojize(':cross_mark:')
@@ -59,7 +95,9 @@ async def create_kb_task(task, user_id, page=0, description=False):
     if user.super_admin or task.user_id_create == user_id or await check_admin_chat(task.chat_id, user_id):
         if not task.completed:
             kb_task.row(btn_edit_title, btn_edit_desc, btn_edit_date, btn_add_user)
-    kb_task.row(btn_del_task, btn_back_tasks)
+    kb_task.row(btn_back_tasks)
+    if user.super_admin or task.user_id_create == user_id or await check_admin_chat(task.chat_id, user_id):
+        kb_task.insert(btn_del_task)
     return kb_task
 
 
@@ -112,6 +150,16 @@ async def create_kb_add_user(task, page):
 
 
 @logger.catch
+async def create_kb_new_task_user(chat_id):
+    kb_new_task_user = InlineKeyboardMarkup(row_width=1)
+    chat = await get_chat(chat_id)
+    for part in chat.participants:
+        kb_new_task_user.insert(InlineKeyboardButton(text=part.user.name,
+                                                    callback_data=cb_new_task_user.new(user_id=part.user.t_id)))
+    return kb_new_task_user
+
+
+@logger.catch
 async def get_list_user_id_task(task):
     return [i.user.t_id for i in task.for_user]
 
@@ -157,7 +205,7 @@ async def create_mes_task_to_chat(task):
 
 @logger.catch
 async def create_mes_task_for_chat(task):
-    mes = f'\n\n<b><u>{task.title}</u></b>'
+    mes = f'\n\n<b><u>{task.title}</u></b> (id {task.id})'
     mes += f'\nКому назначено:'
     if len(task.for_user) > 0:
         mes += f' <b><i>{task.for_user[0].user.name}</i></b>'

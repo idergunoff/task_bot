@@ -2,6 +2,17 @@ from button import *
 from func.task_current_func import *
 
 
+@dp.callback_query_handler(cb_new_task.filter())
+@logger.catch
+async def new_task(call: types.CallbackQuery, callback_data: dict):
+    logger.info(f'USER "{call.from_user.id} - {await get_username_call(call)}" PUSH new_task')
+    await add_new_task(callback_data['chat_id'], call.from_user.id)
+    logger.success(f'USER "{call.from_user.id} - {await get_username_call(call)}" CREATE new_task')
+    await TaskStates.NEW_TASK.set()
+    await bot.send_message(call.from_user.id, 'Отправь название задачи.')
+    await call.answer()
+
+
 @dp.message_handler(state=TaskStates.NEW_TASK)
 @logger.catch
 async def add_task(msg: types.Message, state: FSMContext):
@@ -172,3 +183,9 @@ async def show_not_desc_task(call: types.CallbackQuery, callback_data: dict):
     kb_task = await create_kb_task(task, call.from_user.id, callback_data['page'])
     await call.message.edit_text(mes, reply_markup=kb_task)
     await call.answer()
+
+
+@dp.callback_query_handler(cb_show_comment.filter())
+@logger.catch
+async def show_comment(call: types.CallbackQuery, callback_data: dict):
+    await bot.answer_callback_query(call.id, 'Раздел "Комментарии" находится в разаботке', show_alert=True)
