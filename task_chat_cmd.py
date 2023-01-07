@@ -16,10 +16,29 @@ async def cancel_new_task(msg: types.Message, state: FSMContext):
     await bot.send_message(msg.chat.id, 'Отмена!')
     logger.info(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" CANCEL')
 
+        ####################
+        ### Ссылка в бот ###
+        ####################
 
-###################
-### Регистрация ###
-###################
+
+@dp.message_handler(commands=['bot'])
+@logger.catch
+async def link_to_bot(msg: types.Message):
+    await registration(msg=msg)
+    await bot.send_message(
+        msg.chat.id,
+        'Сссылка для перехода в бот\nВ боте есть дополнительные возможности для работы с задачами, такие как '
+        'редактирование, сортировка и другие.',
+        reply_markup=kb_to_chat
+    )
+    logger.info(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" COMMAND BOT send link')
+
+
+        ###################
+        ### Регистрация ###
+        ###################
+
+
 @dp.message_handler(commands=['reg'])
 @logger.catch
 async def registration(msg: types.Message):
@@ -49,6 +68,12 @@ async def registration(msg: types.Message):
     # # await check_chat(-1001789257723)
     # a = await bot.get_chat_member(-1001789257723, 5468555552)
     # print(a.status)
+
+
+
+        ####################
+        ### Новая задача ###
+        ####################
 
 
 @dp.message_handler(commands=['new'])
@@ -144,6 +169,8 @@ async def new_task_user(call: types.CallbackQuery, state: FSMContext, callback_d
 ################
 ### Удаление ###
 ################
+
+
 @dp.message_handler(commands='delete')
 @logger.catch
 async def delete_task_cmd(msg: types.Message):
@@ -184,9 +211,9 @@ async def delete_task_by_id_cmd(msg: types.Message, state: FSMContext):
         logger.error(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" DELETE TASK no task')
 
 
-##################
-### Выполнено! ###
-##################
+        ##################
+        ### Выполнено! ###
+        ##################
 
 
 @dp.message_handler(commands='done')
@@ -228,3 +255,36 @@ async def delete_task_by_id_cmd(msg: types.Message, state: FSMContext):
                                             f'<b>{await get_username_msg(msg)}</b>, отправь id задачи, чтобы ометить '
                                             f'ее выполненной.\n Для отмены отправь /cancel'))
         logger.error(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" DONE TASK no task')
+
+
+        #############################
+        ### Задачи текущей недели ###
+        #############################
+
+
+@dp.message_handler(commands=['week'])
+@logger.catch
+async def send_week_task(msg: types.Message):
+    if msg.chat.id == msg.from_user.id:
+        await bot.send_message(msg.from_user.id, 'Данная команда предназначена только для группового чата.\nВ боте '
+                                                 'просмотреть список задач за разные периоды можно выбрав чат ')
+        logger.warning(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" PUSH week_tasks_cmd IN BOT')
+    else:
+        chat = await get_chat(msg.chat.id)
+        start_date, stop_date = await start_stop_date('week')
+        tasks = session.query(Task).filter(Task.chat_id == chat.chat_id,
+                                           Task.date_end >= start_date, Task.date_end <= stop_date
+                                           ).order_by(Task.date_end).all()
+        await bot.send_message(msg.chat.id, f'<u>Задачи текущей недели чата <b>{chat.title}</b> '
+                                            f'({await get_count_tasks(chat, "week")}):</u>')
+        for t in tasks:
+            compl = ':check_mark_button:' if t.completed else ':cross_mark:'
+            await bot.send_message(
+                msg.chat.id,
+                emojize(
+                    f'{compl} Задача <u><b>"{t.title}"</b></u> (id {t.id})\n'
+                    f'Срок выполнения: <b><i>{t.date_end.strftime("%d.%m.%Y")}</i></b>\n'
+                    f'Кому назначено: <b><i>{t.for_user[0].user.name}</i></b>'
+                )
+            )
+        logger.info(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" PUSH week_tasks_cmd')
