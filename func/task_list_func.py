@@ -78,7 +78,7 @@ async def get_excel_task(chat_id, task_list='all'):
     elif task_list == 'week':
         start_date, stop_date = await start_stop_date('week')
         task_pd = pd.read_sql(session.query(Task).filter(Task.chat_id == chat_id,
-                                           Task.date_end >= start_date, Task.date_end <= stop_date).order_by(Task.date_end).statement, engine)
+                                           Task.date_end >= start_date, Task.date_end < stop_date).order_by(Task.date_end).statement, engine)
     else:
         task_pd = pd.read_sql(session.query(Task).filter(Task.chat_id == chat_id).order_by(Task.date_end).statement, engine)
     task_pd = task_pd.drop(task_pd.columns[[0, 1, 5, 8, 9, 12]], axis=1)
@@ -120,7 +120,7 @@ async def get_ten_tasks(chat, page, task_list):
     elif task_list == 'week':
         start_date, stop_date = await start_stop_date('week')
         tasks = session.query(Task).filter(Task.chat_id == chat.chat_id,
-                                           Task.date_end >= start_date, Task.date_end <= stop_date
+                                           Task.date_end >= start_date, Task.date_end < stop_date
                                            ).order_by(Task.date_end).limit(10).offset(page * 10).all()
     else:
         tasks = session.query(Task).filter(Task.chat_id == chat.chat_id,
@@ -139,7 +139,7 @@ async def get_count_tasks(chat, task_list):
     elif task_list == 'week':
         start_date, stop_date = await start_stop_date('week')
         count_task = session.query(Task).filter(Task.chat_id == chat.chat_id,
-                                           Task.date_end >= start_date, Task.date_end <= stop_date
+                                           Task.date_end >= start_date, Task.date_end < stop_date
                                            ).count()
     else:
         count_task = session.query(Task).filter(Task.chat_id == chat.chat_id,
@@ -165,3 +165,17 @@ async def start_stop_date(task_list):
 async def update_task_list(user_id, task_list):
     session.query(User).filter(User.t_id == user_id).update({'task_list': task_list}, synchronize_session='fetch')
     session.commit()
+
+
+
+@logger.catch
+async def get_oldest_task(chat, start_date=0):
+    oldest_task = session.query(Task).filter(Task.chat_id == chat.chat_id, Task.date_end is not None, Task.date_end >= start_date).order_by(Task.date_end).first()
+    return oldest_task
+
+
+async def start_stop_week(date):
+    year, month, day, week = date.year, date.month, date.day, date.weekday()
+    start_date = datetime.datetime(year, month, day) - datetime.timedelta(days=week)
+    stop_date = datetime.datetime(year, month, day) + datetime.timedelta(days=7 - week)
+    return start_date, stop_date

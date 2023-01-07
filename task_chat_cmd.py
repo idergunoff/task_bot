@@ -273,7 +273,7 @@ async def send_week_task(msg: types.Message):
         chat = await get_chat(msg.chat.id)
         start_date, stop_date = await start_stop_date('week')
         tasks = session.query(Task).filter(Task.chat_id == chat.chat_id,
-                                           Task.date_end >= start_date, Task.date_end <= stop_date
+                                           Task.date_end >= start_date, Task.date_end < stop_date
                                            ).order_by(Task.date_end).all()
         await bot.send_message(msg.chat.id, f'<u>Задачи текущей недели чата <b>{chat.title}</b> '
                                             f'({await get_count_tasks(chat, "week")}):</u>')
@@ -288,3 +288,56 @@ async def send_week_task(msg: types.Message):
                 )
             )
         logger.info(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" PUSH week_tasks_cmd')
+
+
+        ######################
+        ### Выгрузка Excel ###
+        ######################
+
+
+@dp.message_handler(commands=['excel'])
+@logger.catch
+async def send_excel_all_tasks(msg: types.Message):
+    if msg.chat.id == msg.from_user.id:
+        await bot.send_message(msg.from_user.id, 'Данная команда предназначена только для группового чата.\nВ боте '
+        'выгрузить список задач за разные периоды нужно выбрать чат, выбрать период времени - неделя, месяц или все и нажать кнопку "Excel" ')
+        logger.warning(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" PUSH send_excel_cmd IN BOT')
+    else:
+        list_column = ['id', 'Задача', 'Описание', 'Автор задачи', 'Выполнено', 'Дата создания', 'Срок выполнения',
+                       'Дата выполнения']
+        chat = await get_chat(msg.chat.id)
+        start_date = 0
+        wb = Workbook()
+        while True:
+            oldest_task = await get_oldest_task(chat, start_date)
+            if not oldest_task:
+                break
+            start, stop = await start_stop_week(oldest_task.date_end)
+            ws = wb.create_sheet(f'{start.strftime("%d.%m.%Y")} - '
+                                 f'{(stop-datetime.timedelta(days=1)).strftime("%d.%m.%Y")}')
+
+            for n, cell in enumerate(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']):
+                ws[f'{cell}1'] = list_column[n]
+
+            start_date = stop
+        wb.save('test.xlsx')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
