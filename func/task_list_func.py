@@ -47,7 +47,7 @@ async def create_show_tasks_mes(chat, user_id, page=0, task_list='all'):
         my_task = ''
         if len(task.for_user) > 0:
             my_task = ':face_with_monocle:' if user_id == task.for_user[0].user_id else ''
-        mes += emojize(f'\n{complete} <b>{str(n + page * 10 + 1)}.</b>{my_task} {task.title} {warning}')
+        mes += emojize(f'\n{complete} <b>{str(n + page * 10 + 1)}.</b> <i>{task.date_end.strftime("%d.%m.%Y")}</i> {my_task} <b>{task.title}</b> {warning}')
     return mes
 
 
@@ -59,14 +59,19 @@ async def create_show_chat_for_tasks_kb(user):
     return kb_chat
 
 
-
-
-
 @logger.catch
 async def del_task_by_id(task_id):
     session.query(Task).filter(Task.id == task_id).delete()
     session.query(TaskForUser).filter(TaskForUser.task_id == task_id).delete()
     session.commit()
+
+
+@logger.catch
+async def get_this_week_month_tasks(chat_id, wm):
+    start_date, stop_date = await start_stop_date(wm)
+    tasks = session.query(Task).filter(
+        Task.chat_id == chat_id, Task.date_end >= start_date, Task.date_end < stop_date).order_by(Task.date_end).all()
+    return tasks, start_date, stop_date
 
 
 @logger.catch
@@ -179,3 +184,11 @@ async def start_stop_week(date):
     start_date = datetime.datetime(year, month, day) - datetime.timedelta(days=week)
     stop_date = datetime.datetime(year, month, day) + datetime.timedelta(days=7 - week)
     return start_date, stop_date
+
+
+@logger.catch
+async def get_week_tasks(chat, start_date, stop_date):
+    tasks = session.query(Task).filter(Task.chat_id == chat.chat_id,
+                                       Task.date_end >= start_date, Task.date_end < stop_date
+                                       ).order_by(Task.date_end).all()
+    return tasks

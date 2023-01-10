@@ -40,6 +40,29 @@ async def add_new_task_cmd(chat_id, user_id, task_data, for_user_id):
 
 
 @logger.catch
+async def add_new_task_bot(user_id, task_data, for_user_id):
+    new_task = Task(
+        chat_id=task_data['chat_id_bot'],
+        user_id_create=user_id,
+        user_id_edit=user_id,
+        date_create=datetime.datetime.now(tz=tz),
+        date_edit=datetime.datetime.now(tz=tz),
+        title=task_data['title_bot'],
+        description=task_data['description_bot'],
+        date_end=task_data['date_end_bot']
+    )
+    session.add(new_task)
+    session.commit()
+    new_task_for_user = TaskForUser(
+        task_id=new_task.id,
+        user_id=for_user_id
+    )
+    session.add(new_task_for_user)
+    session.commit()
+    return new_task
+
+
+@logger.catch
 async def create_mes_task(task, description=False):
     mes = f'Выполнено:'
     done = emojize(':check_mark_button:') if task.completed else emojize(':cross_mark:')
@@ -64,20 +87,18 @@ async def create_kb_task(task, user_id, page=0, description=False):
     btn_complete = InlineKeyboardButton(text=emojize('Готово!:check_mark_button:'),
                                         callback_data=cb_type_edit_task.new(task_id=task.id, type_edit='compl', page=page))
     if not description:
-        btn_show_desc = InlineKeyboardButton(text=emojize(':magnifying_glass_tilted_right::memo:'),
+        btn_show_desc = InlineKeyboardButton(text=emojize(':magnifying_glass_tilted_right:Описание'),
                                              callback_data=cb_show_desc.new(task_id=task.id, page=page))
     else:
-        btn_show_desc = InlineKeyboardButton(text=emojize(':cross_mark_button::memo:'),
+        btn_show_desc = InlineKeyboardButton(text=emojize(':cross_mark_button:Описание'),
                                              callback_data=cb_not_show_desc.new(task_id=task.id, page=page))
-    btn_show_comment = InlineKeyboardButton(text=emojize(':speech_balloon:'),
-                                            callback_data=cb_show_comment.new(task_id=task.id))
-    btn_edit_title = InlineKeyboardButton(text=emojize(':wrench::notebook:'),
+    btn_edit_title = InlineKeyboardButton(text=emojize(':wrench:Название'),
                                           callback_data=cb_type_edit_task.new(task_id=task.id, type_edit='title', page=page))
-    btn_edit_desc = InlineKeyboardButton(text=emojize(':wrench::memo:'),
+    btn_edit_desc = InlineKeyboardButton(text=emojize(':wrench:Описание'),
                                          callback_data=cb_type_edit_task.new(task_id=task.id, type_edit='desc', page=page))
-    btn_edit_date = InlineKeyboardButton(text=emojize(':wrench::tear-off_calendar:'),
+    btn_edit_date = InlineKeyboardButton(text=emojize(':wrench:Срок выполнения'),
                                          callback_data=cb_type_edit_task.new(task_id=task.id, type_edit='date', page=page))
-    btn_add_user = InlineKeyboardButton(text=emojize(':wrench::face_with_monocle:'),
+    btn_add_user = InlineKeyboardButton(text=emojize(':wrench:Кому назначено'),
                                         callback_data=cb_type_edit_task.new(task_id=task.id, type_edit='add_user', page=page))
     btn_del_task = InlineKeyboardButton(text=emojize(':wastebasket:'), callback_data=cb_del_task.new(task_id=task.id))
     btn_back_tasks = InlineKeyboardButton(text=emojize(':BACK_arrow:Назад'),
@@ -91,10 +112,10 @@ async def create_kb_task(task, user_id, page=0, description=False):
         if user.super_admin or task.user_id_create == user_id or await check_admin_chat(task.chat_id, user_id):
             if not task.completed:
                 kb_task.insert(btn_complete)
-    kb_task.insert(btn_show_desc).insert(btn_show_comment)
+    kb_task.insert(btn_show_desc)
     if user.super_admin or task.user_id_create == user_id or await check_admin_chat(task.chat_id, user_id):
         if not task.completed:
-            kb_task.row(btn_edit_title, btn_edit_desc, btn_edit_date, btn_add_user)
+            kb_task.row(btn_edit_title, btn_edit_desc).row(btn_edit_date, btn_add_user)
     kb_task.row(btn_back_tasks)
     if user.super_admin or task.user_id_create == user_id or await check_admin_chat(task.chat_id, user_id):
         kb_task.insert(btn_del_task)

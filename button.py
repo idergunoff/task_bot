@@ -35,7 +35,7 @@ cb_back_task_admin = CallbackData('back_task_admin', 'chat_id') # id чата д
 
 # KeyboardButton
 
-btn_project = KeyboardButton(emojize('Проекты'))
+# btn_project = KeyboardButton(emojize('Проекты'))
 btn_task = KeyboardButton(emojize('Задачи'))
 
 
@@ -54,11 +54,15 @@ kb_to_chat.row(btn_to_bot)
 # ReplyKeyboardMarkup
 
 kb_start = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=False)
-kb_start.row(btn_project, btn_task)
+kb_start.row(btn_task)
 
 
 class TaskStates(StatesGroup):
-    NEW_TASK = State()
+    NEW_TASK_TITLE_BOT = State()
+    NEW_TASK_DESC_BOT = State()
+    NEW_TASK_DATE_BOT = State()
+    NEW_TASK_USER_BOT = State()
+
     EDIT_TITLE_TASK = State()
     EDIT_DESC_TASK = State()
     EDIT_DATE_TASK = State()

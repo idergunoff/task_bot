@@ -1,3 +1,6 @@
+import asyncio
+import datetime
+
 from aiogram.utils import executor
 
 from func.function import *
@@ -47,16 +50,41 @@ async def superadmin(msg: types.Message):
     await msg.reply('Теперь вы суперадмин.')
 
 
-@dp.message_handler(text=emojize('Проекты'))
-@logger.catch
-async def push_project(msg: types.Message):
-    await bot.send_message(msg.from_user.id, 'Раздел "Проекты" находится в разаботке')
+# @dp.message_handler(text=emojize('Проекты'))
+# @logger.catch
+# async def push_project(msg: types.Message):
+#     await bot.send_message(msg.from_user.id, 'Раздел "Проекты" находится в разаботке')
 
 
 @dp.message_handler(commands=['bot'])
 @logger.catch
 async def test(msg: types.Message):
     print(msg.chat.id, msg.from_user.id)
+
+
+@dp.message_handler(commands=['task'])
+@logger.catch
+async def send_notice_tasks(msg: types.Message):
+    print(1)
+    date_now = datetime.datetime.now(tz=tz)
+    day, hour, min, sec = date_now.day, date_now.hour, date_now.minute, date_now.second
+    if date_now.hour < 9:
+        time_delay = datetime.timedelta(days=day, hours=9) - datetime.timedelta(days=day, hours=hour, minutes=min, seconds=sec)
+    else:
+        time_delay = datetime.timedelta(days=day + 1, hours=9) - datetime.timedelta(days=day, hours=hour, minutes=min, seconds=sec)
+    await asyncio.sleep(time_delay.seconds)
+    while True:
+        tasks = await tasks_this_day()
+        for task in tasks:
+            if not task.completed:
+                await bot.send_message(
+                    task.chat_id,
+                    emojize(
+                        f'Сегодня крайний срок выполнения задачи <u><b>"{task.title}"</b></u> (id {task.id})\n'
+                        f'Кому назначено: <b><i>{task.for_user[0].user.name}</i></b>'
+                    )
+                )
+        await asyncio.sleep(86400)
 
 
 async def shutdown(dispatcher: Dispatcher):

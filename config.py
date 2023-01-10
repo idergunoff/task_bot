@@ -10,7 +10,10 @@ from telegram_bot_calendar import DetailedTelegramCalendar, LSTEP
 from emoji import emojize
 import pandas as pd
 from openpyxl import Workbook
-
+from openpyxl.styles import colors
+from openpyxl.styles import Font, Color, PatternFill, Side, Border
+import asyncio
+import os
 
 from model import *
 import pytz

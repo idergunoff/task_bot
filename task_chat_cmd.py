@@ -1,3 +1,5 @@
+import os
+
 from button import *
 from func.task_current_func import *
 from func.task_list_func import *
@@ -7,6 +9,9 @@ from func.task_list_func import *
     TaskStates.NEW_TASK_TITLE,
     TaskStates.NEW_TASK_DESC,
     TaskStates.NEW_TASK_DATE,
+    TaskStates.NEW_TASK_TITLE_BOT,
+    TaskStates.NEW_TASK_DESC_BOT,
+    TaskStates.NEW_TASK_DATE_BOT,
     TaskStates.DELETE_TASK,
     TaskStates.DONE_TASK
 ])
@@ -270,6 +275,7 @@ async def send_week_task(msg: types.Message):
                                                  'просмотреть список задач за разные периоды можно выбрав чат ')
         logger.warning(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" PUSH week_tasks_cmd IN BOT')
     else:
+        await registration(msg=msg)
         chat = await get_chat(msg.chat.id)
         start_date, stop_date = await start_stop_date('week')
         tasks = session.query(Task).filter(Task.chat_id == chat.chat_id,
@@ -303,8 +309,10 @@ async def send_excel_all_tasks(msg: types.Message):
         'выгрузить список задач за разные периоды нужно выбрать чат, выбрать период времени - неделя, месяц или все и нажать кнопку "Excel" ')
         logger.warning(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" PUSH send_excel_cmd IN BOT')
     else:
-        list_column = ['id', 'Задача', 'Описание', 'Автор задачи', 'Выполнено', 'Дата создания', 'Срок выполнения',
+        await registration(msg=msg)
+        list_column = ['Задача', 'Описание', 'Автор задачи', 'id', 'Выполнено', 'Дата создания', 'Срок выполнения',
                        'Дата выполнения']
+        list_width = [20, 60, 20, 7, 15, 20, 20, 20]
         chat = await get_chat(msg.chat.id)
         start_date = 0
         wb = Workbook()
@@ -316,11 +324,38 @@ async def send_excel_all_tasks(msg: types.Message):
             ws = wb.create_sheet(f'{start.strftime("%d.%m.%Y")} - '
                                  f'{(stop-datetime.timedelta(days=1)).strftime("%d.%m.%Y")}')
 
-            for n, cell in enumerate(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']):
-                ws[f'{cell}1'] = list_column[n]
+            for n, col in enumerate(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']):
+                ws[f'{col}1'] = list_column[n]
+                ws.column_dimensions[col].width = list_width[n]
+            row = ws.row_dimensions[1]
+            row.font = Font(bold=True, name='Calibri', size=12)
 
+            tasks_week = await get_week_tasks(chat, start, stop)
+            for n, t in enumerate(tasks_week):
+                user_create = await get_user(t.user_id_create)
+                ws[f'A{n + 2}'] = t.title
+                ws[f'B{n + 2}'] = t.description
+                ws[f'C{n + 2}'] = user_create.name
+                ws[f'D{n + 2}'] = t.id
+                ws[f'E{n + 2}'] = 'Выполнено' if t.completed else 'Не выполнено'
+                ws[f'F{n + 2}'] = t.date_create.strftime("%d.%m.%Y %H:%M") if t.date_create else ''
+                ws[f'G{n + 2}'] = t.date_end.strftime("%d.%m.%Y") if t.date_end else ''
+                ws[f'H{n + 2}'] = t.date_complete.strftime("%d.%m.%Y %H:%M") if t.date_complete else ''
+                row = ws.row_dimensions[n + 2]
+                if t.completed:
+                    row.fill = PatternFill("solid", fgColor="E2FFEC")
+                else:
+                    row.fill = PatternFill("solid", fgColor="FFE2E2")
+                bd = Side(style='thin', color="000000")
+                row.border = Border(left=bd, top=bd, right=bd, bottom=bd)
             start_date = stop
-        wb.save('test.xlsx')
+        start, stop = await start_stop_date('week')
+        wb.active = wb[f'{start.strftime("%d.%m.%Y")} - '
+                       f'{(stop - datetime.timedelta(days=1)).strftime("%d.%m.%Y")}']
+        file_name = f'{chat.title}_Задачи.xlsx'
+        wb.save(file_name)
+        await bot.send_document(msg.chat.id, open(file_name, 'rb'))
+        os.remove(file_name)
 
 
 
