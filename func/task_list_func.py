@@ -129,7 +129,7 @@ async def get_ten_tasks(chat, page, task_list):
                                            ).order_by(Task.date_end).limit(10).offset(page * 10).all()
     else:
         tasks = session.query(Task).filter(Task.chat_id == chat.chat_id,
-                                           or_(Task.date_end == None, Task.date_end >= datetime.datetime.now(tz=tz))
+                                           or_(Task.date_end == None, Task.date_end >= datetime.datetime.now(tz=tz)-datetime.timedelta(days=1))
                                            ).order_by(Task.date_end).limit(10).offset(page * 10).all()
     return tasks
 
