@@ -75,7 +75,6 @@ async def registration(msg: types.Message):
     # print(a.status)
 
 
-
         ####################
         ### Новая задача ###
         ####################
@@ -92,7 +91,7 @@ async def new_task_cmd(msg: types.Message, state: FSMContext):
         logger.info(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" PUSH new_task_cmd')
         await registration(msg=msg)
         await TaskStates.NEW_TASK_TITLE.set()
-        await state.update_data(user_id_create=msg.from_user.id, chat_id=msg.chat.id)
+        await state.update_data(user_id_create=msg.from_user.id, chat_id=msg.chat.id, msg_id_del=msg.message_id)
         await bot.send_message(msg.chat.id, f'<b>{await get_username_msg(msg)}</b>, отправь название задачи.\n '
                                             f'Для отмены добавления задачи отправь /cancel')
 
@@ -102,8 +101,10 @@ async def new_task_cmd(msg: types.Message, state: FSMContext):
 async def new_task_title(msg: types.Message, state: FSMContext):
     task_data = await state.get_data()
     if msg.from_user.id == task_data['user_id_create']:
+        await bot.delete_message(task_data['chat_id'], task_data['msg_id_del'])
+        await bot.delete_message(task_data['chat_id'], task_data['msg_id_del'] + 1)
         await TaskStates.NEW_TASK_DESC.set()
-        await state.update_data(title=msg.text)
+        await state.update_data(title=msg.text, msg_id_del=msg.message_id)
         await bot.send_message(msg.chat.id, f'<b>{await get_username_msg(msg)}</b>, отправь описание задачи. '
                                             f'Для отмены добавления задачи отправь /cancel')
         logger.info(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" SEND title')
@@ -114,8 +115,10 @@ async def new_task_title(msg: types.Message, state: FSMContext):
 async def new_task_desc(msg: types.Message, state: FSMContext):
     task_data = await state.get_data()
     if msg.from_user.id == task_data['user_id_create']:
+        await bot.delete_message(task_data['chat_id'], task_data['msg_id_del'])
+        await bot.delete_message(task_data['chat_id'], task_data['msg_id_del'] + 1)
         await TaskStates.NEW_TASK_DATE.set()
-        await state.update_data(description=msg.text)
+        await state.update_data(description=msg.text, msg_id_del=msg.message_id)
         await bot.send_message(
             msg.chat.id,
             f'<b>{await get_username_msg(msg)}</b>, отправь срок выполнения задачи в формате "<i>01.01.2023</i>". '
@@ -132,6 +135,9 @@ async def new_task_date(msg: types.Message, state: FSMContext):
         try:
             date_end = datetime.datetime.strptime(msg.text, '%d.%m.%Y')
         except ValueError:
+            await state.update_data(msg_id_del=msg.message_id)
+            await bot.delete_message(task_data['chat_id'], task_data['msg_id_del'])
+            await bot.delete_message(task_data['chat_id'], task_data['msg_id_del'] + 1)
             await bot.send_message(
                 msg.chat.id,
                 emojize(f':warning:Внимание!!!:warning:\nНеправильный формат даты!\n'
@@ -141,6 +147,9 @@ async def new_task_date(msg: types.Message, state: FSMContext):
             logger.error(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" SEND error format date')
             return
         if date_end.timestamp() < datetime.datetime.now(tz=tz).timestamp():
+            await state.update_data(msg_id_del=msg.message_id)
+            await bot.delete_message(task_data['chat_id'], task_data['msg_id_del'])
+            await bot.delete_message(task_data['chat_id'], task_data['msg_id_del'] + 1)
             await bot.send_message(
                 msg.chat.id,
                 emojize(f':warning:Внимание!!!:warning:\nВыбранная дата уже прошла, выберите дату в будущем.\n'
@@ -150,7 +159,9 @@ async def new_task_date(msg: types.Message, state: FSMContext):
             logger.error(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" SEND error past date')
             return
         await TaskStates.NEW_TASK_USER.set()
-        await state.update_data(date_end=date_end)
+        await state.update_data(date_end=date_end, msg_id_del=msg.message_id)
+        await bot.delete_message(task_data['chat_id'], task_data['msg_id_del'])
+        await bot.delete_message(task_data['chat_id'], task_data['msg_id_del'] + 1)
         kb_new_task_user = await create_kb_new_task_user(msg.chat.id)
         await bot.send_message(msg.chat.id, f'<b>{await get_username_msg(msg)}</b>, выберите кому назначена задача '
                                             f'<b><u>{task_data["title"]}</u></b>', reply_markup=kb_new_task_user)
@@ -162,6 +173,7 @@ async def new_task_date(msg: types.Message, state: FSMContext):
 async def new_task_user(call: types.CallbackQuery, state: FSMContext, callback_data: dict):
     task_data = await state.get_data()
     if call.from_user.id == task_data['user_id_create']:
+        await bot.delete_message(task_data['chat_id'], task_data['msg_id_del'])
         new_task = await add_new_task_cmd(call.message.chat.id, call.from_user.id, task_data, callback_data['user_id'])
         logger.success(f'USER "{call.from_user.id} - {await get_username_call(call)}" ADD task')
         await state.finish()
@@ -350,8 +362,11 @@ async def send_excel_all_tasks(msg: types.Message):
                 row.border = Border(left=bd, top=bd, right=bd, bottom=bd)
             start_date = stop
         start, stop = await start_stop_date('week')
-        wb.active = wb[f'{start.strftime("%d.%m.%Y")} - '
+        try:
+            wb.active = wb[f'{start.strftime("%d.%m.%Y")} - '
                        f'{(stop - datetime.timedelta(days=1)).strftime("%d.%m.%Y")}']
+        except KeyError:
+            pass
         file_name = f'{chat.title}_Задачи.xlsx'
         wb.save(file_name)
         await bot.send_document(msg.chat.id, open(file_name, 'rb'))

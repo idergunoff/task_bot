@@ -120,7 +120,7 @@ async def get_ten_tasks(chat, page, task_list):
     if task_list == 'month':
         start_date, stop_date = await start_stop_date('month')
         tasks = session.query(Task).filter(Task.chat_id == chat.chat_id,
-                                      Task.date_end >= start_date, Task.date_end <= stop_date
+                                      Task.date_end >= start_date, Task.date_end < stop_date
                                       ).order_by(Task.date_end).limit(10).offset(page*10).all()
     elif task_list == 'week':
         start_date, stop_date = await start_stop_date('week')
@@ -148,7 +148,7 @@ async def get_count_tasks(chat, task_list):
                                            ).count()
     else:
         count_task = session.query(Task).filter(Task.chat_id == chat.chat_id,
-                                      or_(Task.date_end == None, Task.date_end >= datetime.datetime.now(tz=tz))
+                                      or_(Task.date_end == None, Task.date_end >= datetime.datetime.now(tz=tz)-datetime.timedelta(days=1))
                                       ).count()
     return count_task
 

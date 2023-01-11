@@ -219,8 +219,11 @@ async def excel_task(call: types.CallbackQuery, callback_data: dict):
                 row.border = Border(left=bd, top=bd, right=bd, bottom=bd)
             start_date = stop
         start, stop = await start_stop_date('week')
-        wb.active = wb[f'{start.strftime("%d.%m.%Y")} - '
+        try:
+            wb.active = wb[f'{start.strftime("%d.%m.%Y")} - '
                                  f'{(stop - datetime.timedelta(days=1)).strftime("%d.%m.%Y")}']
+        except KeyError:
+            pass
     wb.save(file_name)
     await bot.send_document(call.from_user.id, open(file_name, 'rb'))
     os.remove(file_name)
