@@ -217,8 +217,8 @@ async def delete_task_by_id_cmd(msg: types.Message, state: FSMContext):
     if task and task.chat.chat_id == msg.chat.id:
         title = task.title
         task_data = await state.get_data()
-        await bot.delete_message(task_data['chat_id'], task_data['msg_id_del'])
-        await bot.delete_message(task_data['chat_id'], task_data['msg_id_del'] + 1)
+        await bot.delete_message(msg.chat.id, task_data['msg_id_del'])
+        await bot.delete_message(msg.chat.id, task_data['msg_id_del'] + 1)
         await state.finish()
         if user.super_admin or task.user_id_create == msg.from_user.id or await check_admin_chat(task.chat_id, msg.from_user.id):
             await del_task_by_id(task.id)
@@ -231,6 +231,9 @@ async def delete_task_by_id_cmd(msg: types.Message, state: FSMContext):
                         f'эту задачу.\n Вы должны быть автором задачи или модератором данного чата'))
             logger.error(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" DELETE TASK no privilege')
     else:
+        task_data = await state.get_data()
+        await bot.delete_message(msg.chat.id, task_data['msg_id_del'])
+        await bot.delete_message(msg.chat.id, task_data['msg_id_del'] + 1)
         await state.update_data(msg_id_del=msg.message_id)
         await bot.send_message(msg.chat.id, emojize(f':warning:Внимание!!!:warning:\nЗадачи с таким id не существует.\n'
                 f'<b>{await get_username_msg(msg)}</b>, отправь id задачи для удаления.\n '
@@ -267,8 +270,8 @@ async def delete_task_by_id_cmd(msg: types.Message, state: FSMContext):
     if task and task.chat.chat_id == msg.chat.id:
         title = task.title
         task_data = await state.get_data()
-        await bot.delete_message(task_data['chat_id'], task_data['msg_id_del'])
-        await bot.delete_message(task_data['chat_id'], task_data['msg_id_del'] + 1)
+        await bot.delete_message(msg.chat.id, task_data['msg_id_del'])
+        await bot.delete_message(msg.chat.id, task_data['msg_id_del'] + 1)
         await state.finish()
         if user.super_admin or task.user_id_create == msg.from_user.id or \
                 await check_admin_chat(task.chat_id, msg.from_user.id) or msg.from_user.id == task.for_user[0].user_id:
@@ -282,6 +285,9 @@ async def delete_task_by_id_cmd(msg: types.Message, state: FSMContext):
             f'выполненной эту задачу.\n Вы должны быть автором либо исполнителем задачи или модератором данного чата'))
             logger.error(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" DONE TASK no privilege')
     else:
+        task_data = await state.get_data()
+        await bot.delete_message(msg.chat.id, task_data['msg_id_del'])
+        await bot.delete_message(msg.chat.id, task_data['msg_id_del'] + 1)
         await state.update_data(msg_id_del=msg.message_id)
         await bot.send_message(msg.chat.id, emojize(f':warning:Внимание!!!:warning:\nЗадачи с таким id не существует.\n'
                                             f'<b>{await get_username_msg(msg)}</b>, отправь id задачи, чтобы ометить '
