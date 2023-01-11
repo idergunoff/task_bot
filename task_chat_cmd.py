@@ -1,3 +1,4 @@
+import asyncio
 import os
 
 from button import *
@@ -33,10 +34,14 @@ async def link_to_bot(msg: types.Message):
     await bot.send_message(
         msg.chat.id,
         'Сссылка для перехода в бот\nВ боте есть дополнительные возможности для работы с задачами, такие как '
-        'редактирование, сортировка и другие.',
+        'редактирование, сортировка и другие.\n Данная ссылка удалится через 15 секунд',
         reply_markup=kb_to_chat
     )
     logger.info(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" COMMAND BOT send link')
+    await asyncio.sleep(15)
+    await bot.delete_message(msg.chat.id, msg.message_id)
+    await bot.delete_message(msg.chat.id, msg.message_id + 1)
+
 
 
         ###################
@@ -177,7 +182,7 @@ async def new_task_user(call: types.CallbackQuery, state: FSMContext, callback_d
         new_task = await add_new_task_cmd(call.message.chat.id, call.from_user.id, task_data, callback_data['user_id'])
         logger.success(f'USER "{call.from_user.id} - {await get_username_call(call)}" ADD task')
         await state.finish()
-        await bot.send_message(new_task.chat_id, await create_mes_task_to_chat(new_task), reply_markup=kb_to_chat)
+        await bot.send_message(new_task.chat_id, await create_mes_task_to_chat(new_task))
         await update_show_chat(new_task)
         await call.answer()
         await call.message.delete()
@@ -190,7 +195,7 @@ async def new_task_user(call: types.CallbackQuery, state: FSMContext, callback_d
 
 @dp.message_handler(commands='delete')
 @logger.catch
-async def delete_task_cmd(msg: types.Message):
+async def delete_task_cmd(msg: types.Message, state: FSMContext):
     if msg.chat.id == msg.from_user.id:
         await bot.send_message(msg.from_user.id, 'Данная команда предназначена только для группового чата.\nДля '
                                                  'удалния задачи в боте выберите чат, выберите задачу,  потом нажмите кнопку "Удалить задачу"')
@@ -199,6 +204,7 @@ async def delete_task_cmd(msg: types.Message):
         logger.info(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" PUSH delete_task_cmd')
         await registration(msg=msg)
         await TaskStates.DELETE_TASK.set()
+        await state.update_data(msg_id_del=msg.message_id)
         await bot.send_message(msg.chat.id, f'<b>{await get_username_msg(msg)}</b>, отправь id задачи для удаления.\n '
                                             f'Для отмены удаления задачи отправь /cancel')
 
@@ -210,6 +216,9 @@ async def delete_task_by_id_cmd(msg: types.Message, state: FSMContext):
     task = await get_task(msg.text)
     if task and task.chat.chat_id == msg.chat.id:
         title = task.title
+        task_data = await state.get_data()
+        await bot.delete_message(task_data['chat_id'], task_data['msg_id_del'])
+        await bot.delete_message(task_data['chat_id'], task_data['msg_id_del'] + 1)
         await state.finish()
         if user.super_admin or task.user_id_create == msg.from_user.id or await check_admin_chat(task.chat_id, msg.from_user.id):
             await del_task_by_id(task.id)
@@ -222,6 +231,7 @@ async def delete_task_by_id_cmd(msg: types.Message, state: FSMContext):
                         f'эту задачу.\n Вы должны быть автором задачи или модератором данного чата'))
             logger.error(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" DELETE TASK no privilege')
     else:
+        await state.update_data(msg_id_del=msg.message_id)
         await bot.send_message(msg.chat.id, emojize(f':warning:Внимание!!!:warning:\nЗадачи с таким id не существует.\n'
                 f'<b>{await get_username_msg(msg)}</b>, отправь id задачи для удаления.\n '
                                             f'Для отмены удаления задачи отправь /cancel'))
@@ -235,7 +245,7 @@ async def delete_task_by_id_cmd(msg: types.Message, state: FSMContext):
 
 @dp.message_handler(commands='done')
 @logger.catch
-async def done_task_cmd(msg: types.Message):
+async def done_task_cmd(msg: types.Message, state: FSMContext):
     if msg.chat.id == msg.from_user.id:
         await bot.send_message(msg.from_user.id, 'Данная команда предназначена только для группового чата.\nВ боте, '
              'чтобы отметить задачу выполненной выберите чат, выберите задачу,  потом нажмите кнопку "Выполнено"')
@@ -244,6 +254,7 @@ async def done_task_cmd(msg: types.Message):
         logger.info(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" PUSH done_task_cmd')
         await registration(msg=msg)
         await TaskStates.DONE_TASK.set()
+        await state.update_data(msg_id_del=msg.message_id)
         await bot.send_message(msg.chat.id, f'<b>{await get_username_msg(msg)}</b>, отправь id задачи, чтобы ометить '
                                             f'ее выполненной.\n Для отмены отправь /cancel')
 
@@ -255,6 +266,9 @@ async def delete_task_by_id_cmd(msg: types.Message, state: FSMContext):
     task = await get_task(msg.text)
     if task and task.chat.chat_id == msg.chat.id:
         title = task.title
+        task_data = await state.get_data()
+        await bot.delete_message(task_data['chat_id'], task_data['msg_id_del'])
+        await bot.delete_message(task_data['chat_id'], task_data['msg_id_del'] + 1)
         await state.finish()
         if user.super_admin or task.user_id_create == msg.from_user.id or \
                 await check_admin_chat(task.chat_id, msg.from_user.id) or msg.from_user.id == task.for_user[0].user_id:
@@ -268,6 +282,7 @@ async def delete_task_by_id_cmd(msg: types.Message, state: FSMContext):
             f'выполненной эту задачу.\n Вы должны быть автором либо исполнителем задачи или модератором данного чата'))
             logger.error(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" DONE TASK no privilege')
     else:
+        await state.update_data(msg_id_del=msg.message_id)
         await bot.send_message(msg.chat.id, emojize(f':warning:Внимание!!!:warning:\nЗадачи с таким id не существует.\n'
                                             f'<b>{await get_username_msg(msg)}</b>, отправь id задачи, чтобы ометить '
                                             f'ее выполненной.\n Для отмены отправь /cancel'))

@@ -219,22 +219,21 @@ async def check_show_chat(task):
 
 @logger.catch
 async def create_mes_task_to_chat(task):
-    mes = f'<b>{task.user_create.name}</b> добавил задачу:'
+    mes = f':green_circle::green_circle::green_circle:\n<b>{task.user_create.name}</b> добавил задачу - '
     mes += await create_mes_task_for_chat(task)
     return mes
 
 
 @logger.catch
 async def create_mes_task_for_chat(task):
-    mes = f'\n\n<b><u>{task.title}</u></b> (id {task.id})'
-    mes += f'\nКому назначено:'
+    mes = f'<b><u>{task.title}</u></b> (id {task.id})'
+    mes += f'\nДля'
     if len(task.for_user) > 0:
         mes += f' <b><i>{task.for_user[0].user.name}</i></b>'
-    mes += f'\nСрок:'
+    mes += f' до'
     if task.date_end:
         mes += f' <b><i>{task.date_end.strftime("%d.%m.%Y")}</i></b>'
     if task.description:
-        mes += f'\nОписание:'
         mes += f'\n<b><i>{task.description}</i></b>'
     return mes
 

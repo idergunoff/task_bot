@@ -117,7 +117,7 @@ async def new_task_user(call: types.CallbackQuery, state: FSMContext, callback_d
     logger.success(f'USER "{call.from_user.id} - {await get_username_call(call)}" ADD task bot')
     await state.finish()
     await bot.send_message(call.from_user.id, f'Задача <b><u>{new_task.title}</u></b> успешно добавлена!')
-    await bot.send_message(new_task.chat_id, await create_mes_task_to_chat(new_task), reply_markup=kb_to_chat)
+    await bot.send_message(new_task.chat_id, await create_mes_task_to_chat(new_task))
     await update_show_chat(new_task)
     await call.answer()
     await call.message.delete()
@@ -189,11 +189,11 @@ async def edit_desc_task(msg: types.Message, state: FSMContext):
     await bot.send_message(msg.from_user.id, mes, reply_markup=kb_task_edit)
     if task.show_chat:
         user = await get_user(msg.from_user.id)
-        mes = emojize(f'<b>{user.name}</b> изменил описание задачи:')
+        mes = emojize(f':green_circle::green_circle::green_circle:\n<b>{user.name}</b> изменил описание задачи - ')
         mes += await create_mes_task_for_chat(task)
-        await bot.send_message(task.chat_id, mes, reply_markup=kb_to_chat)
+        await bot.send_message(task.chat_id, mes)
     if await check_show_chat(task):
-        await bot.send_message(task.chat_id, await create_mes_task_to_chat(task), reply_markup=kb_to_chat)
+        await bot.send_message(task.chat_id, await create_mes_task_to_chat(task))
         await update_show_chat(task)
 
 
@@ -210,11 +210,11 @@ async def edit_title_task(msg: types.Message, state: FSMContext):
     await bot.send_message(msg.from_user.id, mes, reply_markup=kb_task_edit)
     if task.show_chat:
         user = await get_user(msg.from_user.id)
-        mes = emojize(f'<b>{user.name}</b> изменил название задачи:')
+        mes = emojize(f':green_circle::green_circle::green_circle:\n<b>{user.name}</b> изменил название задачи - ')
         mes += await create_mes_task_for_chat(task)
-        await bot.send_message(task.chat_id, mes, reply_markup=kb_to_chat)
+        await bot.send_message(task.chat_id, mes)
     if await check_show_chat(task):
-        await bot.send_message(task.chat_id, await create_mes_task_to_chat(task), reply_markup=kb_to_chat)
+        await bot.send_message(task.chat_id, await create_mes_task_to_chat(task))
         await update_show_chat(task)
 
 
@@ -250,11 +250,11 @@ async def edit_date_task(msg: types.Message, state: FSMContext):
     await bot.send_message(msg.from_user.id, mes, reply_markup=kb_task_edit)
     if task.show_chat:
         user = await get_user(msg.from_user.id)
-        mes = emojize(f'<b>{user.name}</b> изменил сроки выполнения задачи:')
+        mes = emojize(f':green_circle::green_circle::green_circle:\n<b>{user.name}</b> изменил сроки выполнения задачи - ')
         mes += await create_mes_task_for_chat(task)
-        await bot.send_message(task.chat_id, mes, reply_markup=kb_to_chat)
+        await bot.send_message(task.chat_id, mes)
     if await check_show_chat(task):
-        await bot.send_message(task.chat_id, await create_mes_task_to_chat(task), reply_markup=kb_to_chat)
+        await bot.send_message(task.chat_id, await create_mes_task_to_chat(task))
         await update_show_chat(task)
 # @dp.callback_query_handler(DetailedTelegramCalendar.func(), state=TaskStates.EDIT_DATE_TASK)
 # @logger.catch
@@ -294,11 +294,11 @@ async def add_user_task(call: types.CallbackQuery, callback_data: dict):
     await call.answer()
     if task.show_chat:
         user = await get_user(call.from_user.id)
-        mes = emojize(f'<b>{user.name}</b> изменил исполнителя задачи:')
+        mes = emojize(f':green_circle::green_circle::green_circle:\n<b>{user.name}</b> изменил исполнителя задачи - ')
         mes += await create_mes_task_for_chat(task)
-        await bot.send_message(task.chat_id, mes, reply_markup=kb_to_chat)
+        await bot.send_message(task.chat_id, mes)
     if await check_show_chat(task):
-        await bot.send_message(task.chat_id, await create_mes_task_to_chat(task), reply_markup=kb_to_chat)
+        await bot.send_message(task.chat_id, await create_mes_task_to_chat(task))
         await update_show_chat(task)
 
 
