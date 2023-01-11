@@ -1,6 +1,8 @@
 import datetime
 
 from config import *
+
+
 # from telethon import TelegramClient
 
 
@@ -73,17 +75,29 @@ async def get_last_task(user_id):
 
 @logger.catch
 async def check_admin_chat(chat_id, user_id):
-    return session.query(Participant.admin).filter(Participant.chat_id == chat_id, Participant.user_id == user_id).first()[0]
+    return \
+    session.query(Participant.admin).filter(Participant.chat_id == chat_id, Participant.user_id == user_id).first()[0]
 
 
 @logger.catch
 async def tasks_this_day():
-    date_now = datetime.datetime.now()
+    date_now = datetime.datetime.now(tz=tz)
     year, month, day = date_now.year, date_now.month, date_now.day
     yesterday = datetime.datetime(year, month, day - 1)
     tomorrow = datetime.datetime(year, month, day + 1)
-    tasks = session.query(Task).filter(Task.date_end > yesterday, Task.date_end < tomorrow).order_by(Task.date_end).all()
+    tasks = session.query(Task).filter(Task.date_end > yesterday, Task.date_end < tomorrow).order_by(
+        Task.date_end).all()
     return tasks
+
+
+@logger.catch
+async def get_all_users():
+    return session.query(User).all()
+
+
+@logger.catch
+async def get_task_for_user(user_id):
+    return session.query(TaskForUser).filter(TaskForUser.user_id == user_id).all()
 
 
 # async def check_chat_participant(chat_id):

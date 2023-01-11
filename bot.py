@@ -74,16 +74,30 @@ async def send_notice_tasks(msg: types.Message):
         time_delay = datetime.timedelta(days=day + 1, hours=9) - datetime.timedelta(days=day, hours=hour, minutes=min, seconds=sec)
     await asyncio.sleep(time_delay.seconds)
     while True:
-        tasks = await tasks_this_day()
-        for task in tasks:
+        tasks_day = await tasks_this_day()
+        for task in tasks_day:
             if not task.completed:
                 await bot.send_message(
                     task.chat_id,
                     emojize(
+                        f':green_circle::green_circle::green_circle:\n'
                         f'Сегодня крайний срок выполнения задачи <u><b>"{task.title}"</b></u> (id {task.id})\n'
                         f'Кому назначено: <b><i>{task.for_user[0].user.name}</i></b>'
                     )
                 )
+
+        users = await get_all_users()
+        for user in users:
+            user_tasks = await get_task_for_user(user.t_id)
+            mes = '<b><u>Список назначенных вам задач:</u></b>\n'
+            num = 1
+            for tfu in user_tasks:
+                if not tfu.task.completed:
+                    mes += f'\n{num}. <b>{tfu.task.title}</b> в чате {tfu.task.chat.title} до <i>{tfu.task.date_end.strftime("%d.%m.%Y")}</i>'
+                    num += 1
+            if num > 1:
+                await bot.send_message(user.t_id, mes)
+
         await asyncio.sleep(86400)
 
 
