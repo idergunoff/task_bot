@@ -91,7 +91,7 @@ async def del_task(call: types.CallbackQuery, callback_data: dict):
     mes += await create_show_tasks_mes(chat, call.from_user.id, task_list=user.task_list)
     await call.message.edit_text(emojize(mes), reply_markup=kb_task)
     await call.answer()
-    mes = emojize(f':green_circle::green_circle::green_circle:\n<b>{user.name}</b> удалил задачу <u><b>{title}</b></u>')
+    mes = emojize(f':green_circle::green_circle::green_circle:\n<b>{user.name}</b> удалил(а) задачу <u><b>{title}</b></u>')
     await bot.send_message(chat.chat_id, mes)
 
 

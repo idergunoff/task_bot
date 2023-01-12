@@ -85,20 +85,45 @@ async def send_notice_tasks(msg: types.Message):
                         f'Кому назначено: <b><i>{task.for_user[0].user.name}</i></b>'
                     )
                 )
-
-        users = await get_all_users()
-        for user in users:
-            user_tasks = await get_task_for_user(user.t_id)
-            mes = '<b><u>Список назначенных вам задач:</u></b>\n'
-            num = 1
-            for tfu in user_tasks:
-                if not tfu.task.completed:
-                    mes += f'\n{num}. <b>{tfu.task.title}</b> в чате {tfu.task.chat.title} до <i>{tfu.task.date_end.strftime("%d.%m.%Y")}</i>'
-                    num += 1
-            if num > 1:
-                await bot.send_message(user.t_id, mes)
+        if date_now.weekday() not in [6, 7]:
+            users = await get_all_users()
+            for user in users:
+                user_tasks = await get_task_for_user(user.t_id)
+                list_task = []
+                if len(user_tasks) > 0:
+                    for tfu in user_tasks:
+                        list_task.append([tfu.task.date_end, tfu.task.completed, tfu.task.title, tfu.task.chat.title])
+                        list_task.sort()
+                    mes = '<b><u>Список назначенных вам задач:</u></b>\n'
+                    num = 1
+                    for t in list_task:
+                        if not t[1] and t[0].timestamp() >= (
+                                datetime.datetime.now(tz=tz) - datetime.timedelta(days=1)).timestamp():
+                            mes += f'\n<b>{num}.</b> <b>{t[2]}</b>\nв чате <b><i>"{t[3]}"</i></b>\nдо <i>{t[0].strftime("%d.%m.%Y")}</i>\n'
+                            num += 1
+                    if num > 1:
+                        await bot.send_message(user.t_id, mes)
 
         await asyncio.sleep(86400)
+
+
+@dp.message_handler(commands=['t'])
+@logger.catch
+async def test(msg: types.Message):
+    user_tasks = await get_task_for_user(msg.from_user.id)
+    list_task = []
+    if user_tasks:
+        for tfu in user_tasks:
+            list_task.append([tfu.task.date_end, tfu.task.completed, tfu.task.title, tfu.task.chat.title])
+            list_task.sort()
+        mes = '<b><u>Список назначенных вам задач:</u></b>\n'
+        num = 1
+        for t in list_task:
+            if not t[1] and t[0].timestamp() >= (datetime.datetime.now(tz=tz)-datetime.timedelta(days=1)).timestamp():
+                mes += f'\n<b>{num}.</b> <b>{t[2]}</b>\nв чате <b><i>"{t[3]}"</i></b>\nдо <i>{t[0].strftime("%d.%m.%Y")}</i>\n'
+                num += 1
+
+        await bot.send_message(msg.from_user.id, mes)
 
 
 async def shutdown(dispatcher: Dispatcher):

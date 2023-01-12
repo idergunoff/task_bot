@@ -152,19 +152,19 @@ async def type_edit_task(call: types.CallbackQuery, callback_data: dict, state: 
     if type_edit == 'desc':
         await TaskStates.EDIT_DESC_TASK.set()
         await state.update_data(page=callback_data['page'])
-        mes = f'Описание задачи <b>{task.title}</b>:\n<i>{task.description}</i> \nОтправьте новое описание\nДля отмены изменения задачи отправь /cancel.'
+        mes = f'Описание задачи <b>{task.title}</b>:\n<i>{task.description}</i> \nОтправь новое описание\nДля отмены изменения задачи отправь /cancel.'
         await call.message.edit_text(mes)
         await call.answer()
     if type_edit == 'title':
         await TaskStates.EDIT_TITLE_TASK.set()
         await state.update_data(page=callback_data['page'])
-        mes = f'Название задачи:\n<b>{task.title}</b>\nОтправьте новое название\nДля отмены изменения задачи отправь /cancel.'
+        mes = f'Название задачи:\n<b>{task.title}</b>\nОтправь новое название\nДля отмены изменения задачи отправь /cancel.'
         await call.message.edit_text(mes)
         await call.answer()
     if type_edit == 'date':
         await TaskStates.EDIT_DATE_TASK.set()
         await state.update_data(page=callback_data['page'])
-        mes = f'Срок выполнения задачи <b>{task.title}</b>:\n<i>{task.date_end.strftime("%d.%m.%Y")}</i> \nОтправьте новый срок выполнения ' \
+        mes = f'Срок выполнения задачи <b>{task.title}</b>:\n<i>{task.date_end.strftime("%d.%m.%Y")}</i> \nОтправь новый срок выполнения ' \
               f'задачи в формате "<i>01.01.2023</i>"\nДля отмены изменения задачи отправь /cancel.'
         await call.message.edit_text(mes)
         # calendar, step = DetailedTelegramCalendar().build()
@@ -172,7 +172,7 @@ async def type_edit_task(call: types.CallbackQuery, callback_data: dict, state: 
         await call.answer()
     if type_edit == 'add_user':
         kb_add_user = await create_kb_add_user(task, int(callback_data['page']))
-        await call.message.edit_text(f'Выберите исполнителя для задания <b>"{task.title}"</b>:', reply_markup=kb_add_user)
+        await call.message.edit_text(f'Выбери исполнителя для задания <b>"{task.title}"</b>:', reply_markup=kb_add_user)
         await call.answer()
 
 
@@ -189,7 +189,7 @@ async def edit_desc_task(msg: types.Message, state: FSMContext):
     await bot.send_message(msg.from_user.id, mes, reply_markup=kb_task_edit)
     if task.show_chat:
         user = await get_user(msg.from_user.id)
-        mes = emojize(f':green_circle::green_circle::green_circle:\n<b>{user.name}</b> изменил описание задачи - ')
+        mes = emojize(f':green_circle::green_circle::green_circle:\n<b>{user.name}</b> изменил(а) описание задачи - ')
         mes += await create_mes_task_for_chat(task)
         await bot.send_message(task.chat_id, mes)
     if await check_show_chat(task):
@@ -210,7 +210,7 @@ async def edit_title_task(msg: types.Message, state: FSMContext):
     await bot.send_message(msg.from_user.id, mes, reply_markup=kb_task_edit)
     if task.show_chat:
         user = await get_user(msg.from_user.id)
-        mes = emojize(f':green_circle::green_circle::green_circle:\n<b>{user.name}</b> изменил название задачи - ')
+        mes = emojize(f':green_circle::green_circle::green_circle:\n<b>{user.name}</b> изменил(а) название задачи - ')
         mes += await create_mes_task_for_chat(task)
         await bot.send_message(task.chat_id, mes)
     if await check_show_chat(task):
@@ -250,7 +250,7 @@ async def edit_date_task(msg: types.Message, state: FSMContext):
     await bot.send_message(msg.from_user.id, mes, reply_markup=kb_task_edit)
     if task.show_chat:
         user = await get_user(msg.from_user.id)
-        mes = emojize(f':green_circle::green_circle::green_circle:\n<b>{user.name}</b> изменил сроки выполнения задачи - ')
+        mes = emojize(f':green_circle::green_circle::green_circle:\n<b>{user.name}</b> изменил(а) сроки выполнения задачи - ')
         mes += await create_mes_task_for_chat(task)
         await bot.send_message(task.chat_id, mes)
     if await check_show_chat(task):
@@ -294,7 +294,7 @@ async def add_user_task(call: types.CallbackQuery, callback_data: dict):
     await call.answer()
     if task.show_chat:
         user = await get_user(call.from_user.id)
-        mes = emojize(f':green_circle::green_circle::green_circle:\n<b>{user.name}</b> изменил исполнителя задачи - ')
+        mes = emojize(f':green_circle::green_circle::green_circle:\n<b>{user.name}</b> изменил(а) исполнителя задачи - ')
         mes += await create_mes_task_for_chat(task)
         await bot.send_message(task.chat_id, mes)
     if await check_show_chat(task):
