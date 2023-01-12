@@ -16,6 +16,7 @@ async def create_show_tasks_kb(chat, page=0, task_list='all'):
             kb_task.insert(InlineKeyboardButton(text='-', callback_data='not_button'))
     btn_new_task = InlineKeyboardButton(emojize(':memo:Новая задача'), callback_data=cb_new_task.new(chat_id=chat.chat_id))
     btn_excel_task = InlineKeyboardButton(text='Excel', callback_data=cb_excel_tasks.new(chat_id=chat.chat_id))
+    btn_my_excel_task = InlineKeyboardButton(text='My Excel', callback_data='my_excel')
     text_button = ':backhand_index_pointing_right:Неделя' if task_list == 'week' else 'Неделя'
     btn_week_task = InlineKeyboardButton(text=emojize(text_button), callback_data=cb_week_tasks.new(chat_id=chat.chat_id))
     text_button = ':backhand_index_pointing_right:Месяц' if task_list == 'month' else 'Месяц'
@@ -28,7 +29,7 @@ async def create_show_tasks_kb(chat, page=0, task_list='all'):
     if page < (await get_count_tasks(chat, task_list) - 1) // 10:
         kb_task.insert(InlineKeyboardButton(text='>>', callback_data=cb_page_list_task.new(chat_id=chat.chat_id, page=page + 1)))
     kb_task.row(btn_week_task, btn_month_task, btn_all_task, btn_excel_task)
-    kb_task.row(btn_back_chat_task)
+    kb_task.row(btn_back_chat_task, btn_my_excel_task)
     return kb_task
 
 

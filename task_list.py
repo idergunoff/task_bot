@@ -119,13 +119,11 @@ async def all_task(call: types.CallbackQuery, callback_data: dict):
     await call.answer()
 
 
-
 @dp.callback_query_handler(cb_excel_tasks.filter())
 @logger.catch
 async def excel_task(call: types.CallbackQuery, callback_data: dict):
-    list_column = ['Задача', 'Описание', 'Автор задачи', 'id', 'Выполнено', 'Дата создания', 'Срок выполнения',
-                   'Дата выполнения']
-    list_width = [20, 60, 20, 7, 15, 20, 20, 20]
+    list_column = ['Задача', 'Кому назначено', 'id', 'Срок выполнения', 'Автор задачи', 'Описание']
+    list_width = [20, 20, 7, 20, 20, 60]
     chat = await get_chat(callback_data['chat_id'])
     user = await get_user(call.from_user.id)
     wb = Workbook()
@@ -134,21 +132,18 @@ async def excel_task(call: types.CallbackQuery, callback_data: dict):
         ws = wb.active
         file_name = f'{chat.title}_Задачи за неделю ({start.strftime("%d.%m.%Y")} - ' \
                     f'{(stop - datetime.timedelta(days=1)).strftime("%d.%m.%Y")}).xlsx'
-        for n, col in enumerate(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']):
+        for n, col in enumerate(['A', 'B', 'C', 'D', 'E', 'F']):
             ws[f'{col}1'] = list_column[n]
             ws.column_dimensions[col].width = list_width[n]
         row = ws.row_dimensions[1]
         row.font = Font(bold=True, name='Calibri', size=12)
         for n, t in enumerate(tasks_week):
-            user_create = await get_user(t.user_id_create)
             ws[f'A{n + 2}'] = t.title
-            ws[f'B{n + 2}'] = t.description
-            ws[f'C{n + 2}'] = user_create.name
-            ws[f'D{n + 2}'] = t.id
-            ws[f'E{n + 2}'] = 'Выполнено' if t.completed else 'Не выполнено'
-            ws[f'F{n + 2}'] = t.date_create.strftime("%d.%m.%Y %H:%M") if t.date_create else ''
-            ws[f'G{n + 2}'] = t.date_end.strftime("%d.%m.%Y") if t.date_end else ''
-            ws[f'H{n + 2}'] = t.date_complete.strftime("%d.%m.%Y %H:%M") if t.date_complete else ''
+            ws[f'B{n + 2}'] = t.for_user[0].user.name
+            ws[f'C{n + 2}'] = t.id
+            ws[f'D{n + 2}'] = t.date_end.strftime("%d.%m.%Y") if t.date_end else ''
+            ws[f'E{n + 2}'] = t.user_create.name
+            ws[f'F{n + 2}'] = t.description
             row = ws.row_dimensions[n + 2]
             if t.completed:
                 row.fill = PatternFill("solid", fgColor="E2FFEC")
@@ -160,21 +155,18 @@ async def excel_task(call: types.CallbackQuery, callback_data: dict):
         tasks_month, start, stop = await get_this_week_month_tasks(chat.chat_id, 'month')
         ws = wb.active
         file_name = f'{chat.title}_Задачи за {start.strftime("%b %Y")}.xlsx'
-        for n, col in enumerate(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']):
+        for n, col in enumerate(['A', 'B', 'C', 'D', 'E', 'F']):
             ws[f'{col}1'] = list_column[n]
             ws.column_dimensions[col].width = list_width[n]
         row = ws.row_dimensions[1]
         row.font = Font(bold=True, name='Calibri', size=12)
         for n, t in enumerate(tasks_month):
-            user_create = await get_user(t.user_id_create)
             ws[f'A{n + 2}'] = t.title
-            ws[f'B{n + 2}'] = t.description
-            ws[f'C{n + 2}'] = user_create.name
-            ws[f'D{n + 2}'] = t.id
-            ws[f'E{n + 2}'] = 'Выполнено' if t.completed else 'Не выполнено'
-            ws[f'F{n + 2}'] = t.date_create.strftime("%d.%m.%Y %H:%M") if t.date_create else ''
-            ws[f'G{n + 2}'] = t.date_end.strftime("%d.%m.%Y") if t.date_end else ''
-            ws[f'H{n + 2}'] = t.date_complete.strftime("%d.%m.%Y %H:%M") if t.date_complete else ''
+            ws[f'B{n + 2}'] = t.for_user[0].user.name
+            ws[f'C{n + 2}'] = t.id
+            ws[f'D{n + 2}'] = t.date_end.strftime("%d.%m.%Y") if t.date_end else ''
+            ws[f'E{n + 2}'] = t.user_create.name
+            ws[f'F{n + 2}'] = t.description
             row = ws.row_dimensions[n + 2]
             if t.completed:
                 row.fill = PatternFill("solid", fgColor="E2FFEC")
@@ -193,7 +185,7 @@ async def excel_task(call: types.CallbackQuery, callback_data: dict):
             ws = wb.create_sheet(f'{start.strftime("%d.%m.%Y")} - '
                                  f'{(stop - datetime.timedelta(days=1)).strftime("%d.%m.%Y")}')
 
-            for n, col in enumerate(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']):
+            for n, col in enumerate(['A', 'B', 'C', 'D', 'E', 'F']):
                 ws[f'{col}1'] = list_column[n]
                 ws.column_dimensions[col].width = list_width[n]
             row = ws.row_dimensions[1]
@@ -201,15 +193,12 @@ async def excel_task(call: types.CallbackQuery, callback_data: dict):
 
             tasks_week = await get_week_tasks(chat, start, stop)
             for n, t in enumerate(tasks_week):
-                user_create = await get_user(t.user_id_create)
                 ws[f'A{n + 2}'] = t.title
-                ws[f'B{n + 2}'] = t.description
-                ws[f'C{n + 2}'] = user_create.name
-                ws[f'D{n + 2}'] = t.id
-                ws[f'E{n + 2}'] = 'Выполнено' if t.completed else 'Не выполнено'
-                ws[f'F{n + 2}'] = t.date_create.strftime("%d.%m.%Y %H:%M") if t.date_create else ''
-                ws[f'G{n + 2}'] = t.date_end.strftime("%d.%m.%Y") if t.date_end else ''
-                ws[f'H{n + 2}'] = t.date_complete.strftime("%d.%m.%Y %H:%M") if t.date_complete else ''
+                ws[f'B{n + 2}'] = t.for_user[0].user.name
+                ws[f'C{n + 2}'] = t.id
+                ws[f'D{n + 2}'] = t.date_end.strftime("%d.%m.%Y") if t.date_end else ''
+                ws[f'E{n + 2}'] = t.user_create.name
+                ws[f'F{n + 2}'] = t.description
                 row = ws.row_dimensions[n + 2]
                 if t.completed:
                     row.fill = PatternFill("solid", fgColor="E2FFEC")
@@ -229,6 +218,47 @@ async def excel_task(call: types.CallbackQuery, callback_data: dict):
     os.remove(file_name)
 
 
+@dp.callback_query_handler(text='my_excel')
+@logger.catch
+async def my_excel_task(call: types.CallbackQuery):
+    list_column = ['Задача', 'id', 'Срок выполнения', 'Автор задачи', 'Описание']
+    list_width = [20, 7, 20, 20, 60]
+    user = await get_user(call.from_user.id)
+    list_tfu = []
+    for i in await get_task_for_user(call.from_user.id):
+        list_tfu.append([i.task.chat.title, i.task.date_end, i.task.title, i.task_id, i.task.user_create.name, i.task.description, i.task.completed])
+    list_tfu.sort()
+    wb = Workbook()
+    sheet = list_tfu[0][0]
+    num = 2
+    for k, i in enumerate(list_tfu):
+        if i[1].timestamp() >= (datetime.datetime.now(tz=tz)-datetime.timedelta(days=1)).timestamp():
+            if k == 0 or i[0] != sheet or num == 2:
+                sheet = i[0]
+                num = 2
+                ws = wb.create_sheet(sheet)
+                for n, col in enumerate(['A', 'B', 'C', 'D', 'E']):
+                    ws[f'{col}1'] = list_column[n]
+                    ws.column_dimensions[col].width = list_width[n]
+                row = ws.row_dimensions[1]
+                row.font = Font(bold=True, name='Calibri', size=12)
+            ws[f'A{num}'] = i[2]
+            ws[f'B{num}'] = i[3]
+            ws[f'C{num}'] = i[1].strftime("%d.%m.%Y")
+            ws[f'D{num}'] = i[4]
+            ws[f'E{num}'] = i[5]
+            row = ws.row_dimensions[num]
+            if i[6]:
+                row.fill = PatternFill("solid", fgColor="E2FFEC")
+            else:
+                row.fill = PatternFill("solid", fgColor="FFE2E2")
+            bd = Side(style='thin', color="000000")
+            row.border = Border(left=bd, top=bd, right=bd, bottom=bd)
+            num += 1
+    file_name = f'{user.name}_Задачи.xlsx'
+    wb.save(file_name)
+    await bot.send_document(call.from_user.id, open(file_name, 'rb'))
+    os.remove(file_name)
     #
     #
     # user = await get_user(call.from_user.id)

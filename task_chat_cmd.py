@@ -343,9 +343,8 @@ async def send_excel_all_tasks(msg: types.Message):
         logger.warning(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" PUSH send_excel_cmd IN BOT')
     else:
         await registration(msg=msg)
-        list_column = ['Задача', 'Описание', 'Автор задачи', 'id', 'Выполнено', 'Дата создания', 'Срок выполнения',
-                       'Дата выполнения']
-        list_width = [20, 60, 20, 7, 15, 20, 20, 20]
+        list_column = ['Задача', 'Кому назначено', 'id', 'Срок выполнения', 'Автор задачи', 'Описание']
+        list_width = [20, 20, 7, 20, 20, 60]
         chat = await get_chat(msg.chat.id)
         start_date = 0
         wb = Workbook()
@@ -357,7 +356,7 @@ async def send_excel_all_tasks(msg: types.Message):
             ws = wb.create_sheet(f'{start.strftime("%d.%m.%Y")} - '
                                  f'{(stop-datetime.timedelta(days=1)).strftime("%d.%m.%Y")}')
 
-            for n, col in enumerate(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']):
+            for n, col in enumerate(['A', 'B', 'C', 'D', 'E', 'F']):
                 ws[f'{col}1'] = list_column[n]
                 ws.column_dimensions[col].width = list_width[n]
             row = ws.row_dimensions[1]
@@ -365,15 +364,13 @@ async def send_excel_all_tasks(msg: types.Message):
 
             tasks_week = await get_week_tasks(chat, start, stop)
             for n, t in enumerate(tasks_week):
-                user_create = await get_user(t.user_id_create)
                 ws[f'A{n + 2}'] = t.title
-                ws[f'B{n + 2}'] = t.description
-                ws[f'C{n + 2}'] = user_create.name
-                ws[f'D{n + 2}'] = t.id
-                ws[f'E{n + 2}'] = 'Выполнено' if t.completed else 'Не выполнено'
-                ws[f'F{n + 2}'] = t.date_create.strftime("%d.%m.%Y %H:%M") if t.date_create else ''
-                ws[f'G{n + 2}'] = t.date_end.strftime("%d.%m.%Y") if t.date_end else ''
-                ws[f'H{n + 2}'] = t.date_complete.strftime("%d.%m.%Y %H:%M") if t.date_complete else ''
+                ws[f'B{n + 2}'] = t.for_user[0].user.name
+                ws[f'C{n + 2}'] = t.id
+                ws[f'D{n + 2}'] = t.date_end.strftime("%d.%m.%Y") if t.date_end else ''
+                ws[f'E{n + 2}'] = t.user_create.name
+                ws[f'F{n + 2}'] = t.description
+
                 row = ws.row_dimensions[n + 2]
                 if t.completed:
                     row.fill = PatternFill("solid", fgColor="E2FFEC")
