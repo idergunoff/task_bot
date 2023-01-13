@@ -391,6 +391,56 @@ async def send_excel_all_tasks(msg: types.Message):
         os.remove(file_name)
 
 
+@dp.message_handler(commands=['my_excel'])
+@logger.catch
+async def send_excel_all_tasks(msg: types.Message):
+    if msg.chat.id == msg.from_user.id:
+        await bot.send_message(msg.from_user.id, 'Данная команда предназначена только для группового чата.\nВ боте '
+        'выгрузить список личных задач нужно выбрать чат и нажать кнопку "my_excel" ')
+        logger.warning(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" PUSH send_my_excel_cmd IN BOT')
+    else:
+        list_column = ['Задача', 'id', 'Срок выполнения', 'Автор задачи', 'Описание']
+        list_width = [20, 7, 20, 20, 60]
+        user = await get_user(msg.from_user.id)
+        list_tfu = []
+        for i in await get_task_for_user(msg.from_user.id):
+            list_tfu.append([i.task.chat.title, i.task.date_end, i.task.title, i.task_id, i.task.user_create.name,
+                             i.task.description, i.task.completed])
+        list_tfu.sort()
+        wb = Workbook()
+        sheet = list_tfu[0][0]
+        num = 2
+        for k, i in enumerate(list_tfu):
+            if i[1].timestamp() >= (datetime.datetime.now(tz=tz) - datetime.timedelta(days=1)).timestamp():
+                if k == 0 or i[0] != sheet or num == 2:
+                    sheet = i[0]
+                    num = 2
+                    ws = wb.create_sheet(sheet)
+                    for n, col in enumerate(['A', 'B', 'C', 'D', 'E']):
+                        ws[f'{col}1'] = list_column[n]
+                        ws.column_dimensions[col].width = list_width[n]
+                    row = ws.row_dimensions[1]
+                    row.font = Font(bold=True, name='Calibri', size=12)
+                ws[f'A{num}'] = i[2]
+                ws[f'B{num}'] = i[3]
+                ws[f'C{num}'] = i[1].strftime("%d.%m.%Y")
+                ws[f'D{num}'] = i[4]
+                ws[f'E{num}'] = i[5]
+                row = ws.row_dimensions[num]
+                if i[6]:
+                    row.fill = PatternFill("solid", fgColor="E2FFEC")
+                else:
+                    row.fill = PatternFill("solid", fgColor="FFE2E2")
+                bd = Side(style='thin', color="000000")
+                row.border = Border(left=bd, top=bd, right=bd, bottom=bd)
+                num += 1
+        file_name = f'{user.name}_Задачи.xlsx'
+        wb.save(file_name)
+        await bot.send_document(msg.from_user.id, open(file_name, 'rb'))
+        os.remove(file_name)
+        await bot.delete_message(msg.chat.id, msg.message_id)
+
+
 
 
 
