@@ -148,7 +148,7 @@ async def type_edit_task(call: types.CallbackQuery, callback_data: dict, state: 
         user = await get_user(call.from_user.id)
         mes = emojize(f':check_mark_button: <b>{user.name}</b> сообщает о выполнении задачи:')
         mes += await create_mes_task_for_chat(task)
-        await bot.send_message(task.chat_id, mes, reply_markup=kb_to_chat)
+        await bot.send_message(task.chat_id, mes)
     if type_edit == 'desc':
         await TaskStates.EDIT_DESC_TASK.set()
         await state.update_data(page=callback_data['page'])
