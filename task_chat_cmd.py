@@ -94,7 +94,7 @@ async def new_task_cmd(msg: types.Message, state: FSMContext):
         logger.warning(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" PUSH new_task_cmd IN BOT')
     else:
         logger.info(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" PUSH new_task_cmd')
-        await registration(msg=msg)
+        # await registration(msg=msg)
         await TaskStates.NEW_TASK_TITLE.set()
         await state.update_data(user_id_create=msg.from_user.id, chat_id=msg.chat.id, msg_id_del=msg.message_id)
         await bot.send_message(msg.chat.id, f'<b>{await get_username_msg(msg)}</b>, отправь название задачи.\n '
@@ -202,7 +202,7 @@ async def delete_task_cmd(msg: types.Message, state: FSMContext):
         logger.warning(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" PUSH delete_task_cmd IN BOT')
     else:
         logger.info(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" PUSH delete_task_cmd')
-        await registration(msg=msg)
+        # await registration(msg=msg)
         await TaskStates.DELETE_TASK.set()
         await state.update_data(msg_id_del=msg.message_id)
         await bot.send_message(msg.chat.id, f'<b>{await get_username_msg(msg)}</b>, отправь id задачи для удаления.\n '
@@ -255,7 +255,7 @@ async def done_task_cmd(msg: types.Message, state: FSMContext):
         logger.warning(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" PUSH done_task_cmd IN BOT')
     else:
         logger.info(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" PUSH done_task_cmd')
-        await registration(msg=msg)
+        # await registration(msg=msg)
         await TaskStates.DONE_TASK.set()
         await state.update_data(msg_id_del=msg.message_id)
         await bot.send_message(msg.chat.id, f'<b>{await get_username_msg(msg)}</b>, отправь id задачи, чтобы ометить '
@@ -308,7 +308,7 @@ async def send_week_task(msg: types.Message):
                                                  'просмотреть список задач за разные периоды можно выбрав чат ')
         logger.warning(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" PUSH week_tasks_cmd IN BOT')
     else:
-        await registration(msg=msg)
+        # await registration(msg=msg)
         chat = await get_chat(msg.chat.id)
         start_date, stop_date = await start_stop_date('week')
         tasks = session.query(Task).filter(Task.chat_id == chat.chat_id,
@@ -441,20 +441,92 @@ async def send_excel_all_tasks(msg: types.Message):
         await bot.delete_message(msg.chat.id, msg.message_id)
 
 
+        ##############################
+        ### Обновление данных чата ###
+        ##############################
 
 
+@dp.message_handler(commands=['update'])
+@logger.catch
+async def update_chat_data(msg: types.Message):
+    if msg.chat.id == msg.from_user.id:
+        await bot.send_message(msg.from_user.id, 'Данная команда предназначена только для группового чата.')
+        logger.warning(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" PUSH update_data_chat IN BOT')
+    else:
+        if session.query(Chat).filter(Chat.chat_id == msg.chat.id).first():
+            session.query(Chat).filter(Chat.chat_id == msg.chat.id).update({'title': msg.chat.title}, synchronize_session='fetch')
+            session.commit()
+            logger.success(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" UPDATE data_chat TITLE')
+            await bot.send_message(msg.chat.id, f'Название чата обновлено на <b>{msg.chat.title}</b>')
+        else:
+            parts = session.query(Participant).filter(Participant.user_id == msg.from_user.id).all()
+            kb_update_chat = InlineKeyboardMarkup()
+            for i in parts:
+                kb_update_chat.row(InlineKeyboardButton(text=i.chat.title, callback_data=cb_update_chat.new(
+                    chat_id=i.chat_id, title=i.chat.title)))
+            await bot.send_message(
+                msg.chat.id,
+                'Изменился ID данного чата. Для обновдения базы данных выберите чат в котором вы сейчас '
+                'находитесь:',
+                reply_markup=kb_update_chat
+            )
 
 
+@dp.callback_query_handler(cb_update_chat.filter())
+@logger.catch
+async def update_chat_data_db(call:types.CallbackQuery, callback_data: dict):
+    session.query(Chat).filter(Chat.chat_id == callback_data['chat_id']).update(
+        {'chat_id': call.message.chat.id, 'title': callback_data['title']},
+        synchronize_session='fetch'
+    )
+    session.query(Participant).filter(Participant.chat_id == callback_data['chat_id']).update(
+        {'chat_id': call.message.chat.id},
+        synchronize_session='fetch'
+    )
+    session.query(Task).filter(Task.chat_id == callback_data['chat_id']).update(
+        {'chat_id': call.message.chat.id},
+        synchronize_session='fetch'
+    )
+    session.commit()
+    await call.message.edit_text('Данные чата обновлены.')
+    await call.answer()
+    logger.success(f'USER "{call.from_user.id} - {await get_username_call(call)}" UPDATE data_chat CHAT_ID')
 
 
+#####################
+### Выход из чата ###
+#####################
 
 
+@dp.message_handler(commands=['exit'])
+@logger.catch
+async def exit_chat(msg: types.Message):
+    if msg.chat.id != msg.from_user.id:
+        await bot.send_message(msg.chat.id, 'Данная команда предназначена только для использования в боте.')
+        logger.warning(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" PUSH exit_chat IN CHAT')
+    else:
+        parts = session.query(Participant).filter(Participant.user_id == msg.from_user.id).all()
+        kb_exit_chat = InlineKeyboardMarkup()
+        for i in parts:
+            kb_exit_chat.row(InlineKeyboardButton(text=i.chat.title, callback_data=cb_exit_chat.new(chat_id=i.chat_id)))
+        await bot.send_message(
+            msg.from_user.id,
+            'Выберите чат для удаления. Вы не будете отслеживать задачи данного чата.',
+            reply_markup=kb_exit_chat
+        )
 
 
-
-
-
-
+@dp.callback_query_handler(cb_exit_chat.filter())
+@logger.catch
+async def update_exit_chat_db(call:types.CallbackQuery, callback_data: dict):
+    chat = await get_chat(callback_data['chat_id'])
+    session.query(Participant).filter(
+        Participant.user_id == call.from_user.id,
+        Participant.chat_id == callback_data['chat_id']).delete()
+    session.commit()
+    await call.message.edit_text(f'Вы больше не отслеживаете задачи чата <b>{chat.title}</b>')
+    await call.answer()
+    logger.success(f'USER "{call.from_user.id} - {await get_username_call(call)}" EXIT CHAT')
 
 
 

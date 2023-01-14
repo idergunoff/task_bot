@@ -219,21 +219,17 @@ async def check_show_chat(task):
 
 @logger.catch
 async def create_mes_task_to_chat(task):
-    mes = emojize(f':green_circle::green_circle::green_circle:\n<b>{task.user_create.name}</b> добавил(а) задачу (id <b>{task.id}</b>): ')
+    mes = '<b>ДОБАВЛЕНО</b>'
     mes += await create_mes_task_for_chat(task)
     return mes
 
 
 @logger.catch
 async def create_mes_task_for_chat(task):
-    mes = f'\nдля'
-    if len(task.for_user) > 0:
-        mes += f' <b><i>{task.for_user[0].user.name}</i></b>'
-    mes += f' до'
-    if task.date_end:
-        mes += f' <b><i>{task.date_end.strftime("%d.%m.%Y")}</i></b>'
-    if task.description:
-        mes += f'\n<b><i>{task.description}</i></b>'
+    circle = ':green_circle:'*12
+    mes = f'\n<B>id {task.id}</b>: {task.user_create.name} <b>для</b> {task.for_user[0].user.name}'
+    mes += emojize(f'\n<b>Срок:</b> {task.date_end.strftime("%d.%m.%Y")}\n{circle}')
+    mes += f'\n{task.description}'
     return mes
 
 

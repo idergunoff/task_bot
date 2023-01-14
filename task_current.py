@@ -189,7 +189,7 @@ async def edit_desc_task(msg: types.Message, state: FSMContext):
     await bot.send_message(msg.from_user.id, mes, reply_markup=kb_task_edit)
     if task.show_chat:
         user = await get_user(msg.from_user.id)
-        mes = emojize(f':green_circle::green_circle::green_circle:\n<b>{user.name}</b> изменил(а) описание задачи - ')
+        mes = emojize(f'<b>{user.name}</b> изменил(а) описание задачи - ')
         mes += await create_mes_task_for_chat(task)
         await bot.send_message(task.chat_id, mes)
     if await check_show_chat(task):
@@ -210,7 +210,7 @@ async def edit_title_task(msg: types.Message, state: FSMContext):
     await bot.send_message(msg.from_user.id, mes, reply_markup=kb_task_edit)
     if task.show_chat:
         user = await get_user(msg.from_user.id)
-        mes = emojize(f':green_circle::green_circle::green_circle:\n<b>{user.name}</b> изменил(а) название задачи - ')
+        mes = emojize(f'<b>{user.name}</b> изменил(а) название задачи - ')
         mes += await create_mes_task_for_chat(task)
         await bot.send_message(task.chat_id, mes)
     if await check_show_chat(task):
@@ -250,7 +250,7 @@ async def edit_date_task(msg: types.Message, state: FSMContext):
     await bot.send_message(msg.from_user.id, mes, reply_markup=kb_task_edit)
     if task.show_chat:
         user = await get_user(msg.from_user.id)
-        mes = emojize(f':green_circle::green_circle::green_circle:\n<b>{user.name}</b> изменил(а) сроки выполнения задачи - ')
+        mes = emojize(f'<b>{user.name}</b> изменил(а) сроки выполнения задачи - ')
         mes += await create_mes_task_for_chat(task)
         await bot.send_message(task.chat_id, mes)
     if await check_show_chat(task):
@@ -294,7 +294,7 @@ async def add_user_task(call: types.CallbackQuery, callback_data: dict):
     await call.answer()
     if task.show_chat:
         user = await get_user(call.from_user.id)
-        mes = emojize(f':green_circle::green_circle::green_circle:\n<b>{user.name}</b> изменил(а) исполнителя задачи - ')
+        mes = emojize(f'<b>{user.name}</b> изменил(а) исполнителя задачи - ')
         mes += await create_mes_task_for_chat(task)
         await bot.send_message(task.chat_id, mes)
     if await check_show_chat(task):

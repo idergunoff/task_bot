@@ -55,11 +55,11 @@ async def superadmin(msg: types.Message):
 # async def push_project(msg: types.Message):
 #     await bot.send_message(msg.from_user.id, 'Раздел "Проекты" находится в разаботке')
 
-
-@dp.message_handler(commands=['bot'])
-@logger.catch
-async def test(msg: types.Message):
-    print(msg.chat.id, msg.from_user.id)
+#
+# @dp.message_handler(commands=['bot'])
+# @logger.catch
+# async def test(msg: types.Message):
+#     print(msg.chat.id, msg.from_user.id)
 
 
 @dp.message_handler(commands=['task'])
