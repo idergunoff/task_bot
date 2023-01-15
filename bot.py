@@ -85,7 +85,7 @@ async def send_notice_tasks(msg: types.Message):
                         f'Кому назначено: <b><i>{task.for_user[0].user.name}</i></b>'
                     )
                 )
-        if date_now.weekday() not in [6, 7]:
+        if date_now.weekday() not in ['6', '7']:
             users = await get_all_users()
             for user in users:
                 user_tasks = await get_task_for_user(user.t_id)

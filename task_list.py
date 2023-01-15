@@ -122,8 +122,8 @@ async def all_task(call: types.CallbackQuery, callback_data: dict):
 @dp.callback_query_handler(cb_excel_tasks.filter())
 @logger.catch
 async def excel_task(call: types.CallbackQuery, callback_data: dict):
-    list_column = ['Задача', 'Кому назначено', 'id', 'Срок выполнения', 'Автор задачи', 'Описание']
-    list_width = [20, 20, 7, 20, 20, 60]
+    list_column = ['id', 'Автор задачи', 'Кому назначено', 'Срок выполнения', 'Задача', 'Описание']
+    list_width = [7, 20, 20, 20, 20, 60]
     chat = await get_chat(callback_data['chat_id'])
     user = await get_user(call.from_user.id)
     wb = Workbook()
@@ -138,11 +138,11 @@ async def excel_task(call: types.CallbackQuery, callback_data: dict):
         row = ws.row_dimensions[1]
         row.font = Font(bold=True, name='Calibri', size=12)
         for n, t in enumerate(tasks_week):
-            ws[f'A{n + 2}'] = t.title
-            ws[f'B{n + 2}'] = t.for_user[0].user.name
-            ws[f'C{n + 2}'] = t.id
+            ws[f'A{n + 2}'] = t.id
+            ws[f'B{n + 2}'] = t.user_create.name
+            ws[f'C{n + 2}'] = t.for_user[0].user.name
             ws[f'D{n + 2}'] = t.date_end.strftime("%d.%m.%Y") if t.date_end else ''
-            ws[f'E{n + 2}'] = t.user_create.name
+            ws[f'E{n + 2}'] = t.title
             ws[f'F{n + 2}'] = t.description
             row = ws.row_dimensions[n + 2]
             if t.completed:
@@ -161,11 +161,11 @@ async def excel_task(call: types.CallbackQuery, callback_data: dict):
         row = ws.row_dimensions[1]
         row.font = Font(bold=True, name='Calibri', size=12)
         for n, t in enumerate(tasks_month):
-            ws[f'A{n + 2}'] = t.title
-            ws[f'B{n + 2}'] = t.for_user[0].user.name
-            ws[f'C{n + 2}'] = t.id
+            ws[f'A{n + 2}'] = t.id
+            ws[f'B{n + 2}'] = t.user_create.name
+            ws[f'C{n + 2}'] = t.for_user[0].user.name
             ws[f'D{n + 2}'] = t.date_end.strftime("%d.%m.%Y") if t.date_end else ''
-            ws[f'E{n + 2}'] = t.user_create.name
+            ws[f'E{n + 2}'] = t.title
             ws[f'F{n + 2}'] = t.description
             row = ws.row_dimensions[n + 2]
             if t.completed:
@@ -193,11 +193,11 @@ async def excel_task(call: types.CallbackQuery, callback_data: dict):
 
             tasks_week = await get_week_tasks(chat, start, stop)
             for n, t in enumerate(tasks_week):
-                ws[f'A{n + 2}'] = t.title
-                ws[f'B{n + 2}'] = t.for_user[0].user.name
-                ws[f'C{n + 2}'] = t.id
+                ws[f'A{n + 2}'] = t.id
+                ws[f'B{n + 2}'] = t.user_create.name
+                ws[f'C{n + 2}'] = t.for_user[0].user.name
                 ws[f'D{n + 2}'] = t.date_end.strftime("%d.%m.%Y") if t.date_end else ''
-                ws[f'E{n + 2}'] = t.user_create.name
+                ws[f'E{n + 2}'] = t.title
                 ws[f'F{n + 2}'] = t.description
                 row = ws.row_dimensions[n + 2]
                 if t.completed:
@@ -221,8 +221,8 @@ async def excel_task(call: types.CallbackQuery, callback_data: dict):
 @dp.callback_query_handler(text='my_excel')
 @logger.catch
 async def my_excel_task(call: types.CallbackQuery):
-    list_column = ['Задача', 'id', 'Срок выполнения', 'Автор задачи', 'Описание']
-    list_width = [20, 7, 20, 20, 60]
+    list_column = ['id', 'Автор задачи', 'Срок выполнения', 'Задача', 'Описание']
+    list_width = [7, 20, 20, 20, 60]
     user = await get_user(call.from_user.id)
     list_tfu = []
     for i in await get_task_for_user(call.from_user.id):
@@ -242,10 +242,10 @@ async def my_excel_task(call: types.CallbackQuery):
                     ws.column_dimensions[col].width = list_width[n]
                 row = ws.row_dimensions[1]
                 row.font = Font(bold=True, name='Calibri', size=12)
-            ws[f'A{num}'] = i[2]
-            ws[f'B{num}'] = i[3]
+            ws[f'A{num}'] = i[3]
+            ws[f'B{num}'] = i[4]
             ws[f'C{num}'] = i[1].strftime("%d.%m.%Y")
-            ws[f'D{num}'] = i[4]
+            ws[f'D{num}'] = i[2]
             ws[f'E{num}'] = i[5]
             row = ws.row_dimensions[num]
             if i[6]:

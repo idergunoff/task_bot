@@ -343,8 +343,8 @@ async def send_excel_all_tasks(msg: types.Message):
         logger.warning(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" PUSH send_excel_cmd IN BOT')
     else:
         await registration(msg=msg)
-        list_column = ['Задача', 'Кому назначено', 'id', 'Срок выполнения', 'Автор задачи', 'Описание']
-        list_width = [20, 20, 7, 20, 20, 60]
+        list_column = ['id', 'Автор задачи', 'Кому назначено', 'Срок выполнения', 'Задача', 'Описание']
+        list_width = [7, 20, 20, 20, 20, 60]
         chat = await get_chat(msg.chat.id)
         start_date = 0
         wb = Workbook()
@@ -364,11 +364,11 @@ async def send_excel_all_tasks(msg: types.Message):
 
             tasks_week = await get_week_tasks(chat, start, stop)
             for n, t in enumerate(tasks_week):
-                ws[f'A{n + 2}'] = t.title
-                ws[f'B{n + 2}'] = t.for_user[0].user.name
-                ws[f'C{n + 2}'] = t.id
+                ws[f'A{n + 2}'] = t.id
+                ws[f'B{n + 2}'] = t.user_create.name
+                ws[f'C{n + 2}'] = t.for_user[0].user.name
                 ws[f'D{n + 2}'] = t.date_end.strftime("%d.%m.%Y") if t.date_end else ''
-                ws[f'E{n + 2}'] = t.user_create.name
+                ws[f'E{n + 2}'] = t.title
                 ws[f'F{n + 2}'] = t.description
 
                 row = ws.row_dimensions[n + 2]
@@ -399,8 +399,8 @@ async def send_excel_all_tasks(msg: types.Message):
         'выгрузить список личных задач нужно выбрать чат и нажать кнопку "my_excel" ')
         logger.warning(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" PUSH send_my_excel_cmd IN BOT')
     else:
-        list_column = ['Задача', 'id', 'Срок выполнения', 'Автор задачи', 'Описание']
-        list_width = [20, 7, 20, 20, 60]
+        list_column = ['id', 'Автор задачи', 'Срок выполнения', 'Задача', 'Описание']
+        list_width = [7, 20, 20, 20, 60]
         user = await get_user(msg.from_user.id)
         list_tfu = []
         for i in await get_task_for_user(msg.from_user.id):
@@ -421,10 +421,10 @@ async def send_excel_all_tasks(msg: types.Message):
                         ws.column_dimensions[col].width = list_width[n]
                     row = ws.row_dimensions[1]
                     row.font = Font(bold=True, name='Calibri', size=12)
-                ws[f'A{num}'] = i[2]
-                ws[f'B{num}'] = i[3]
+                ws[f'A{num}'] = i[3]
+                ws[f'B{num}'] = i[4]
                 ws[f'C{num}'] = i[1].strftime("%d.%m.%Y")
-                ws[f'D{num}'] = i[4]
+                ws[f'D{num}'] = i[2]
                 ws[f'E{num}'] = i[5]
                 row = ws.row_dimensions[num]
                 if i[6]:
