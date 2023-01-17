@@ -109,12 +109,13 @@ async def new_task_date(msg: types.Message, state: FSMContext):
     logger.info(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" SEND date bot')
 
 
-@dp.callback_query_handler(text='cancel')
-@dp.logger
+@dp.callback_query_handler(text='cancel', state=TaskStates.NEW_TASK_USER_BOT)
+@logger.catch
 async def task_cancel(call: types.CallbackQuery, state: FSMContext):
     await state.finish()
     await call.message.edit_text('Отмена добавления задачи.')
     await call.answer()
+    logger.info(f'USER "{call.from_user.id} - {await get_username_call(call)}" CANCEL btn bot')
 
 
 @dp.callback_query_handler(cb_new_task_user.filter(), state=TaskStates.NEW_TASK_USER_BOT)
