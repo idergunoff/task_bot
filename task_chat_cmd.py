@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 import os
 
 from button import *
@@ -30,7 +31,6 @@ async def cancel_new_task(msg: types.Message, state: FSMContext):
 @dp.message_handler(commands=['bot'])
 @logger.catch
 async def link_to_bot(msg: types.Message):
-    await registration(msg=msg)
     await bot.send_message(
         msg.chat.id,
         'Сссылка для перехода в бот\nВ боте есть дополнительные возможности для работы с задачами, такие как '
@@ -41,7 +41,6 @@ async def link_to_bot(msg: types.Message):
     await asyncio.sleep(15)
     await bot.delete_message(msg.chat.id, msg.message_id)
     await bot.delete_message(msg.chat.id, msg.message_id + 1)
-
 
 
         ###################
@@ -58,10 +57,6 @@ async def registration(msg: types.Message):
         await bot.send_message(msg.chat.id, mes)
         logger.error(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" COMMAND REG IN BOT')
     else:
-        if await check_chat(msg.chat.id, msg.chat.title):
-            mes = f'Чат "{msg.chat.title}" добален в "TaskBot".'
-            await bot.send_message(msg.chat.id, mes)
-            logger.success(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" REG CHAT "{msg.chat.title}"')
         if await check_user(msg.from_user.id, msg):
             mes = f'Пользователь "{await get_username_msg(msg)}" добален в "TaskBot".'
             await bot.send_message(msg.chat.id, mes)
@@ -70,6 +65,21 @@ async def registration(msg: types.Message):
             mes = f'Пользователь "{await get_username_msg(msg)}" зарегистрирован в чате "{msg.chat.title}" в "TaskBot".'
             await bot.send_message(msg.chat.id, mes)
             logger.success(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" REG TO CHAT "{msg.chat.title}"')
+
+
+@dp.message_handler(commands=['reg_chat'])
+@logger.catch
+async def registration(msg: types.Message):
+    logger.info(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" COMMAND REG')
+    if msg.chat.id == msg.from_user.id:
+        mes = 'Данная команда должна использоваться в чате'
+        await bot.send_message(msg.chat.id, mes)
+        logger.error(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" COMMAND REG IN BOT')
+    else:
+        if await check_chat(msg.chat.id, msg.chat.title):
+            mes = f'Чат "{msg.chat.title}" добален в "TaskBot".'
+            await bot.send_message(msg.chat.id, mes)
+            logger.success(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" REG CHAT "{msg.chat.title}"')
 
     # mes = emojize(msg.from_user.first_name + ", добро пожаловать в бот \n:waving_hand:")
     # await bot.send_message(msg.from_user.id, mes)
@@ -151,7 +161,7 @@ async def new_task_date(msg: types.Message, state: FSMContext):
             )
             logger.error(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" SEND error format date')
             return
-        if date_end.timestamp() < datetime.datetime.now(tz=tz).timestamp():
+        if date_end.timestamp() < (datetime.datetime.now(tz=tz) - datetime.timedelta(days=1)).timestamp():
             await state.update_data(msg_id_del=msg.message_id)
             await bot.delete_message(task_data['chat_id'], task_data['msg_id_del'])
             await bot.delete_message(task_data['chat_id'], task_data['msg_id_del'] + 1)
@@ -171,6 +181,16 @@ async def new_task_date(msg: types.Message, state: FSMContext):
         await bot.send_message(msg.chat.id, f'<b>{await get_username_msg(msg)}</b>, выберите кому назначена задача '
                                             f'<b><u>{task_data["title"]}</u></b>', reply_markup=kb_new_task_user)
         logger.info(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" SEND date')
+
+
+@dp.callback_query_handler(text='cancel')
+@dp.logger
+async def task_cancel(call: types.CallbackQuery, state: FSMContext):
+    task_data = await state.get_data()
+    await bot.delete_message(task_data['chat_id'], task_data['msg_id_del'])
+    await state.finish()
+    await call.message.edit_text('Отмена добавления задачи.')
+    await call.answer()
 
 
 @dp.callback_query_handler(cb_new_task_user.filter(), state=TaskStates.NEW_TASK_USER)
@@ -463,7 +483,7 @@ async def update_chat_data(msg: types.Message):
             kb_update_chat = InlineKeyboardMarkup()
             for i in parts:
                 kb_update_chat.row(InlineKeyboardButton(text=i.chat.title, callback_data=cb_update_chat.new(
-                    chat_id=i.chat_id, title=i.chat.title)))
+                    chat_id=i.chat_id)))
             await bot.send_message(
                 msg.chat.id,
                 'Изменился ID данного чата. Для обновдения базы данных выберите чат в котором вы сейчас '
@@ -476,7 +496,7 @@ async def update_chat_data(msg: types.Message):
 @logger.catch
 async def update_chat_data_db(call:types.CallbackQuery, callback_data: dict):
     session.query(Chat).filter(Chat.chat_id == callback_data['chat_id']).update(
-        {'chat_id': call.message.chat.id, 'title': callback_data['title']},
+        {'chat_id': call.message.chat.id},
         synchronize_session='fetch'
     )
     session.query(Participant).filter(Participant.chat_id == callback_data['chat_id']).update(

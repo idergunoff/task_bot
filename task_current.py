@@ -91,7 +91,7 @@ async def new_task_date(msg: types.Message, state: FSMContext):
             'Отправь срок выполнения задачи в формате "<i>01.01.2023</i>". Для отмены добавления задачи отправь /cancel'))
         logger.error(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" SEND error format date bot')
         return
-    if date_end.timestamp() < datetime.datetime.now(tz=tz).timestamp():
+    if date_end.timestamp() < (datetime.datetime.now(tz=tz) - datetime.timedelta(days=1)).timestamp():
         await bot.send_message(
             msg.from_user.id,
             emojize(f':warning:Внимание!!!:warning:\nВыбранная дата уже прошла, выберите дату в будущем.\n'
@@ -107,6 +107,14 @@ async def new_task_date(msg: types.Message, state: FSMContext):
     await bot.send_message(msg.from_user.id, f'Выберите кому назначена задача <b><u>{task_data["title_bot"]}</u></b>',
                            reply_markup=kb_new_task_user)
     logger.info(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" SEND date bot')
+
+
+@dp.callback_query_handler(text='cancel')
+@dp.logger
+async def task_cancel(call: types.CallbackQuery, state: FSMContext):
+    await state.finish()
+    await call.message.edit_text('Отмена добавления задачи.')
+    await call.answer()
 
 
 @dp.callback_query_handler(cb_new_task_user.filter(), state=TaskStates.NEW_TASK_USER_BOT)

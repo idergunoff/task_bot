@@ -2,6 +2,7 @@ import asyncio
 import datetime
 
 from aiogram.utils import executor
+from aiogram.utils.exceptions import MigrateToChat
 
 from func.function import *
 from task_list import *
@@ -77,14 +78,17 @@ async def send_notice_tasks(msg: types.Message):
         tasks_day = await tasks_this_day()
         for task in tasks_day:
             if not task.completed:
-                await bot.send_message(
-                    task.chat_id,
-                    emojize(
-                        f':green_circle::green_circle::green_circle:\n'
-                        f'Сегодня крайний срок выполнения задачи <u><b>"{task.title}"</b></u> (id {task.id})\n'
-                        f'Кому назначено: <b><i>{task.for_user[0].user.name}</i></b>'
+                try:
+                    await bot.send_message(
+                        task.chat_id,
+                        emojize(
+                            f':green_circle::green_circle::green_circle:\n'
+                            f'Сегодня крайний срок выполнения задачи <u><b>"{task.title}"</b></u> (id {task.id})\n'
+                            f'Кому назначено: <b><i>{task.for_user[0].user.name}</i></b>'
+                        )
                     )
-                )
+                except MigrateToChat:
+                    pass
         if date_now.weekday() not in ['6', '7']:
             users = await get_all_users()
             for user in users:

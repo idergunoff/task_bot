@@ -177,6 +177,7 @@ async def create_kb_new_task_user(chat_id):
     for part in chat.participants:
         kb_new_task_user.insert(InlineKeyboardButton(text=part.user.name,
                                                     callback_data=cb_new_task_user.new(user_id=part.user.t_id)))
+        kb_new_task_user.insert(btn_cancel)
     return kb_new_task_user
 
 
@@ -219,7 +220,7 @@ async def check_show_chat(task):
 
 @logger.catch
 async def create_mes_task_to_chat(task):
-    mes = '<b>ДОБАВЛЕНО</b>'
+    mes = f'<b><u>ДОБАВЛЕНО ({task.id})</u></b>'
     mes += await create_mes_task_for_chat(task)
     return mes
 
@@ -227,9 +228,10 @@ async def create_mes_task_to_chat(task):
 @logger.catch
 async def create_mes_task_for_chat(task):
     circle = ':green_circle:'*12
-    mes = f'\n<B>id {task.id}</b>: {task.user_create.name} <b>для</b> {task.for_user[0].user.name}'
-    mes += emojize(f'\n<b>Срок:</b> {task.date_end.strftime("%d.%m.%Y")}\n{circle}')
-    mes += f'\n{task.description}'
+    mes = f'\nкому - <b>{task.for_user[0].user.name}</b>{task.user_create.name}'
+    mes += f'\nсрок - <b>{task.date_end.strftime("%d.%m.%Y")}</b>'
+    mes += f'\nкто - <b>{task.user_create.name}</b>'
+    mes += emojize(f'\n{circle}\n{task.description}')
     return mes
 
 

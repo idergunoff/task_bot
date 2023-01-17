@@ -32,7 +32,7 @@ cb_del_user_admin = CallbackData('del_user_admin', 'chat_id', 'user_id') # id ч
 cb_back_admins = CallbackData('back_admins', 'chat_id') # id чата для возврата в меню админов
 cb_back_task_admin = CallbackData('back_task_admin', 'chat_id') # id чата для выхода из меню админа
 
-cb_update_chat = CallbackData('update_chat', 'chat_id', 'title') # id чата и название для обновления chat_id
+cb_update_chat = CallbackData('update_chat', 'chat_id') # id чата и название для обновления chat_id
 cb_exit_chat= CallbackData('exit_chat', 'chat_id')  # id чата для выхода из чата
 
 
@@ -50,6 +50,7 @@ btn_task = KeyboardButton(emojize('Задачи'))
 
 btn_back_chat_task = InlineKeyboardButton(emojize(':BACK_arrow:Назад'), callback_data='back_chat_task')
 btn_to_bot = InlineKeyboardButton(emojize(':robot:Перейти в бот'), url='https://t.me/PlanTaskBot')
+btn_cancel = InlineKeyboardButton(emojize(':no_entry:ОТМЕНА!'), callback_data='cancel')
 
 kb_to_chat = InlineKeyboardMarkup()
 kb_to_chat.row(btn_to_bot)
