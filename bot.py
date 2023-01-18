@@ -2,7 +2,6 @@ import asyncio
 import datetime
 
 from aiogram.utils import executor
-from aiogram.utils.exceptions import MigrateToChat
 
 from func.function import *
 from task_list import *
@@ -63,10 +62,10 @@ async def superadmin(msg: types.Message):
 #     print(msg.chat.id, msg.from_user.id)
 
 
-@dp.message_handler(commands=['task'])
+@dp.message_handler(commands=['task9'])
 @logger.catch
-async def send_notice_tasks(msg: types.Message):
-    print(1)
+async def send_notice_tasks_9(msg: types.Message):
+    print(9)
     date_now = datetime.datetime.now(tz=tz)
     day, hour, min, sec = date_now.day, date_now.hour, date_now.minute, date_now.second
     if date_now.hour < 9:
@@ -96,18 +95,66 @@ async def send_notice_tasks(msg: types.Message):
                 list_task = []
                 if len(user_tasks) > 0:
                     for tfu in user_tasks:
-                        list_task.append([tfu.task.date_end, tfu.task.completed, tfu.task.title, tfu.task.chat.title])
+                        list_task.append([tfu.task.date_end, tfu.task.completed, tfu.task.title, tfu.task.chat.title, tfu.task.id, tfu.task.description])
                         list_task.sort()
                     mes = '<b><u>Список назначенных вам задач:</u></b>\n'
                     num = 1
                     for t in list_task:
                         if not t[1] and t[0].timestamp() >= (
                                 datetime.datetime.now(tz=tz) - datetime.timedelta(days=1)).timestamp():
-                            mes += f'\n<b>{num}.</b> <b>{t[2]}</b>\nв чате <b><i>"{t[3]}"</i></b>\nдо <i>{t[0].strftime("%d.%m.%Y")}</i>\n'
+                            mes += f'\n<b>{num}.</b> <b>{t[2]}</b> (id {t[4]})\nв чате <b><i>"{t[3]}"</i></b>'
+                            mes += emojize(f'\nдо <i>{t[0].strftime("%d.%m.%Y")}</i>\n:green_circle::green_circle::green_circle:')
+                            mes += f'\n{t[5]}'
                             num += 1
                     if num > 1:
-                        await bot.send_message(user.t_id, mes)
+                        try:
+                            await bot.send_message(user.t_id, mes)
+                        except CantInitiateConversation:
+                            mes = f'Бот не может отправить пользователю <b>{user.name}</b> сообщение. Пользователю ' \
+                                  f'<b>{user.name}</b> необходимо перейти в бот (/bot) и нажать старт.'
+                            await bot.send_message(user_tasks[0].task.chat.chat_id, mes)
+                            logger.error(f'USER "{user.t_id} - {user.name}" NOT START')
+        await asyncio.sleep(86400)
 
+
+@dp.message_handler(commands=['task16'])
+@logger.catch
+async def send_notice_tasks_16(msg: types.Message):
+    print(16)
+    date_now = datetime.datetime.now(tz=tz)
+    day, hour, min, sec = date_now.day, date_now.hour, date_now.minute, date_now.second
+    if date_now.hour < 16:
+        time_delay = datetime.timedelta(days=day, hours=16) - datetime.timedelta(days=day, hours=hour, minutes=min, seconds=sec)
+    else:
+        time_delay = datetime.timedelta(days=day + 1, hours=16) - datetime.timedelta(days=day, hours=hour, minutes=min, seconds=sec)
+    await asyncio.sleep(time_delay.seconds)
+    while True:
+        if date_now.weekday() not in ['6', '7']:
+            users = await get_all_users()
+            for user in users:
+                user_tasks = await get_task_for_user(user.t_id)
+                list_task = []
+                if len(user_tasks) > 0:
+                    for tfu in user_tasks:
+                        list_task.append([tfu.task.date_end, tfu.task.completed, tfu.task.title, tfu.task.chat.title, tfu.task.id, tfu.task.description])
+                        list_task.sort()
+                    mes = '<b><u>Список ваших невыполненных задач:</u></b>\n'
+                    num = 1
+                    for t in list_task:
+                        if not t[1] and t[0].timestamp() <= (
+                                datetime.datetime.now(tz=tz) + datetime.timedelta(days=1)).timestamp():
+                            mes += f'\n<b>{num}.</b> <b>{t[2]}</b> (id {t[4]})\nв чате <b><i>"{t[3]}"</i></b>'
+                            mes += emojize(f'\nдо <i>{t[0].strftime("%d.%m.%Y")}</i>\n:green_circle::green_circle::green_circle:')
+                            mes += f'\n{t[5]}'
+                            num += 1
+                    if num > 1:
+                        try:
+                            await bot.send_message(user.t_id, mes)
+                        except CantInitiateConversation:
+                            mes = f'Бот не может отправить пользователю <b>{user.name}</b> сообщение. Пользователю ' \
+                                  f'<b>{user.name}</b> необходимо перейти в бот (/bot) и нажать старт.'
+                            await bot.send_message(user_tasks[0].task.chat.chat_id, mes)
+                            logger.error(f'USER "{user.t_id} - {user.name}" NOT START')
         await asyncio.sleep(86400)
 
 
@@ -118,13 +165,15 @@ async def test(msg: types.Message):
     list_task = []
     if user_tasks:
         for tfu in user_tasks:
-            list_task.append([tfu.task.date_end, tfu.task.completed, tfu.task.title, tfu.task.chat.title])
+            list_task.append([tfu.task.date_end, tfu.task.completed, tfu.task.title, tfu.task.chat.title, tfu.task.id, tfu.task.description])
             list_task.sort()
         mes = '<b><u>Список назначенных вам задач:</u></b>\n'
         num = 1
         for t in list_task:
             if not t[1] and t[0].timestamp() >= (datetime.datetime.now(tz=tz)-datetime.timedelta(days=1)).timestamp():
-                mes += f'\n<b>{num}.</b> <b>{t[2]}</b>\nв чате <b><i>"{t[3]}"</i></b>\nдо <i>{t[0].strftime("%d.%m.%Y")}</i>\n'
+                mes += f'\n<b>{num}.</b> <b>{t[2]}</b> (id {t[4]})\nв чате <b><i>"{t[3]}"</i></b>'
+                mes += emojize(f'\nдо <i>{t[0].strftime("%d.%m.%Y")}</i>\n:green_circle::green_circle::green_circle:')
+                mes += f'\n{t[5]}'
                 num += 1
 
         await bot.send_message(msg.from_user.id, mes)

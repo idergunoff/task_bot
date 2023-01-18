@@ -550,5 +550,24 @@ async def update_exit_chat_db(call:types.CallbackQuery, callback_data: dict):
     logger.success(f'USER "{call.from_user.id} - {await get_username_call(call)}" EXIT CHAT')
 
 
+    ############################
+    ### список пользователей ###
+    ############################
+
+
+@dp.message_handler(commands=['user_list'])
+@logger.catch
+async def user_list(msg: types.Message):
+    if msg.chat.id == msg.from_user.id:
+        await bot.send_message(msg.chat.id, 'Данная команда предназначена только для использования в чате.')
+        logger.warning(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" PUSH user list IN BOT')
+    else:
+        logger.info(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" LIST USER')
+        chat = await get_chat(msg.chat.id)
+        mes = '<b><u>Список пользователей, зарегистрированнных в боте:</u></b>\n'
+        for n, part in enumerate(chat.participants):
+            mes += f'\n{n+1}. {part.user.name}'
+        await bot.send_message(msg.chat.id, mes)
+
 
 
