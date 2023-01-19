@@ -3,7 +3,7 @@ from aiogram.dispatcher import FSMContext
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.contrib.middlewares.logging import LoggingMiddleware
 from aiogram import types
-from aiogram.utils.exceptions import MessageCantBeDeleted, BadRequest, MigrateToChat, CantInitiateConversation
+from aiogram.utils.exceptions import MessageCantBeDeleted, BadRequest, MigrateToChat, CantInitiateConversation, BotBlocked
 from aiogram.utils import exceptions
 from loguru import logger
 from telegram_bot_calendar import DetailedTelegramCalendar, LSTEP

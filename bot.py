@@ -55,11 +55,6 @@ async def superadmin(msg: types.Message):
 # async def push_project(msg: types.Message):
 #     await bot.send_message(msg.from_user.id, 'Раздел "Проекты" находится в разаботке')
 
-#
-# @dp.message_handler(commands=['bot'])
-# @logger.catch
-# async def test(msg: types.Message):
-#     print(msg.chat.id, msg.from_user.id)
 
 
 @dp.message_handler(commands=['task9'])
@@ -87,7 +82,7 @@ async def send_notice_tasks_9(msg: types.Message):
                         )
                     )
                 except MigrateToChat:
-                    pass
+                    logger.warning(f'MIGRATE migrate_to_chat_id - {msg.migrate_to_chat_id}, migrate_from_chat_id - {msg.migrate_from_chat_id}')
         if date_now.weekday() not in ['6', '7']:
             users = await get_all_users()
             for user in users:
@@ -104,7 +99,7 @@ async def send_notice_tasks_9(msg: types.Message):
                                 datetime.datetime.now(tz=tz) - datetime.timedelta(days=1)).timestamp():
                             mes += f'\n<b>{num}.</b> <b>{t[2]}</b> (id {t[4]})\nв чате <b><i>"{t[3]}"</i></b>'
                             mes += emojize(f'\nдо <i>{t[0].strftime("%d.%m.%Y")}</i>\n:green_circle::green_circle::green_circle:')
-                            mes += f'\n{t[5]}'
+                            mes += f'\n{t[5]}\n'
                             num += 1
                     if num > 1:
                         try:
@@ -114,6 +109,12 @@ async def send_notice_tasks_9(msg: types.Message):
                                   f'<b>{user.name}</b> необходимо перейти в бот (/bot) и нажать старт.'
                             await bot.send_message(user_tasks[0].task.chat.chat_id, mes)
                             logger.error(f'USER "{user.t_id} - {user.name}" NOT START')
+                        except BotBlocked:
+                            mes = f'Бот не может отправить пользователю <b>{user.name}</b> сообщение. Если ' \
+                                  f'пользователь больше не планирует пользоваться данным ботом, необходимо удалить ' \
+                                  f'назначенные ему задачи, чтобы не получать это сообщение.'
+                            await bot.send_message(user_tasks[0].task.chat.chat_id, mes)
+                            logger.error(f'USER "{user.t_id} - {user.name}" BOT BLOCKED')
         await asyncio.sleep(86400)
 
 
@@ -145,7 +146,7 @@ async def send_notice_tasks_16(msg: types.Message):
                                 datetime.datetime.now(tz=tz) + datetime.timedelta(days=1)).timestamp():
                             mes += f'\n<b>{num}.</b> <b>{t[2]}</b> (id {t[4]})\nв чате <b><i>"{t[3]}"</i></b>'
                             mes += emojize(f'\nдо <i>{t[0].strftime("%d.%m.%Y")}</i>\n:green_circle::green_circle::green_circle:')
-                            mes += f'\n{t[5]}'
+                            mes += f'\n{t[5]}\n'
                             num += 1
                     if num > 1:
                         try:
@@ -173,7 +174,7 @@ async def test(msg: types.Message):
             if not t[1] and t[0].timestamp() >= (datetime.datetime.now(tz=tz)-datetime.timedelta(days=1)).timestamp():
                 mes += f'\n<b>{num}.</b> <b>{t[2]}</b> (id {t[4]})\nв чате <b><i>"{t[3]}"</i></b>'
                 mes += emojize(f'\nдо <i>{t[0].strftime("%d.%m.%Y")}</i>\n:green_circle::green_circle::green_circle:')
-                mes += f'\n{t[5]}'
+                mes += f'\n{t[5]}\n'
                 num += 1
 
         await bot.send_message(msg.from_user.id, mes)
