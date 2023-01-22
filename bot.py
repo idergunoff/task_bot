@@ -83,7 +83,7 @@ async def send_notice_tasks_9(msg: types.Message):
                     )
                 except MigrateToChat:
                     logger.warning(f'MIGRATE migrate_to_chat_id - {msg.migrate_to_chat_id}, migrate_from_chat_id - {msg.migrate_from_chat_id}')
-        if datetime.datetime.now(tz=tz).weekday() not in ['6', '7']:
+        if datetime.datetime.now(tz=tz).weekday() not in [5, 6]:
             users = await get_all_users()
             for user in users:
                 user_tasks = await get_task_for_user(user.t_id)
@@ -130,7 +130,7 @@ async def send_notice_tasks_16(msg: types.Message):
         time_delay = datetime.timedelta(days=day + 1, hours=16) - datetime.timedelta(days=day, hours=hour, minutes=min, seconds=sec)
     await asyncio.sleep(time_delay.seconds)
     while True:
-        if datetime.datetime.now(tz=tz).weekday() not in ['6', '7']:
+        if datetime.datetime.now(tz=tz).weekday() not in [5, 6]:
             users = await get_all_users()
             for user in users:
                 user_tasks = await get_task_for_user(user.t_id)
