@@ -107,3 +107,55 @@ async def get_task_for_user(user_id):
 #     async with client:
 #         async for user in client.iter_participants(chat_id):
 #             print(user.id)
+
+@logger.catch
+async def create_reminder(delay, task):
+    await asyncio.sleep(delay)
+    if not task.completed:
+        for tfu in task.for_user:
+            mes = emojize(f':green_circle:<b>{task.title}</b> ({task.id})\n<i>(чат - {task.chat.title})</i>\n<i>(срок - '
+                          f'{task.date_end.strftime("%d.%m.%Y")})</i>')
+            await bot.send_message(tfu.user_id, mes)
+
+
+@logger.catch
+async def send_unexecuted_tasks(time_delay):
+    await asyncio.sleep(time_delay)
+    users = await get_all_users()
+    for user in users:
+        user_tasks = await get_task_for_user(user.t_id)
+        list_task = []
+        if len(user_tasks) > 0:
+            for tfu in user_tasks:
+                list_task.append(
+                    [tfu.task.date_end, tfu.task.completed, tfu.task.title, tfu.task.chat.title, tfu.task.id])
+                list_task.sort()
+            mes = '<b><u>Список невыполненных задач:</u></b>\n'
+            num = 1
+            for t in list_task:
+                if not t[1] and t[0].timestamp() <= ( datetime.datetime.now(tz=tz) + datetime.timedelta(days=1)).timestamp():
+                    mes += emojize(f'\n<b>{num}.</b>\n:green_circle:<b>{t[2]}</b> ({t[4]})\n<i>(чат - {t[3]})</i>')
+                    mes += f'\n<i>(срок - {t[0].strftime("%d.%m.%Y")})</i>'
+                    num += 1
+            if num > 1:
+                try:
+                    await bot.send_message(user.t_id, mes)
+                except CantInitiateConversation:
+                    mes = f'Бот не может отправить пользователю <b>{user.name}</b> сообщение. Пользователю ' \
+                          f'<b>{user.name}</b> необходимо перейти в бот (/bot) и нажать старт.'
+                    await bot.send_message(user_tasks[0].task.chat.chat_id, mes)
+                    logger.error(f'USER "{user.t_id} - {user.name}" NOT START')
+                except BotBlocked:
+                    mes = f'Пользователь <b>{user.name}</b> заблокировал бот, поэтому бот не может отправить ' \
+                          f'ему сообщение. Если пользователь больше не планирует пользоваться данным ботом, ' \
+                          f'необходимо удалить назначенные ему задачи, чтобы не получать это сообщение.'
+                    await bot.send_message(user_tasks[-1].task.chat.chat_id, mes)
+                    logger.error(f'USER "{user.t_id} - {user.name}" BOT BLOCKED')
+
+
+@logger.catch
+async def get_time_delay(hour, minute):
+    now = datetime.datetime.now()
+    target_time = datetime.datetime(now.year, now.month, now.day, hour, minute, 0)
+    delta = target_time - now
+    return delta.total_seconds()

@@ -122,8 +122,8 @@ async def all_task(call: types.CallbackQuery, callback_data: dict):
 @dp.callback_query_handler(cb_excel_tasks.filter())
 @logger.catch
 async def excel_task(call: types.CallbackQuery, callback_data: dict):
-    list_column = ['id', 'Автор задачи', 'Кому назначено', 'Срок выполнения', 'Задача', 'Описание']
-    list_width = [7, 20, 20, 20, 20, 60]
+    list_column = ['id', 'Автор задачи', 'Кому назначено', 'Срок выполнения', 'Задача']
+    list_width = [7, 20, 20, 20, 60]
     chat = await get_chat(callback_data['chat_id'])
     user = await get_user(call.from_user.id)
     wb = Workbook()
@@ -132,7 +132,7 @@ async def excel_task(call: types.CallbackQuery, callback_data: dict):
         ws = wb.active
         file_name = f'{chat.title}_Задачи за неделю ({start.strftime("%d.%m.%Y")} - ' \
                     f'{(stop - datetime.timedelta(days=1)).strftime("%d.%m.%Y")}).xlsx'
-        for n, col in enumerate(['A', 'B', 'C', 'D', 'E', 'F']):
+        for n, col in enumerate(['A', 'B', 'C', 'D', 'E']):
             ws[f'{col}1'] = list_column[n]
             ws.column_dimensions[col].width = list_width[n]
         row = ws.row_dimensions[1]
@@ -143,7 +143,7 @@ async def excel_task(call: types.CallbackQuery, callback_data: dict):
             ws[f'C{n + 2}'] = t.for_user[0].user.name
             ws[f'D{n + 2}'] = t.date_end.strftime("%d.%m.%Y") if t.date_end else ''
             ws[f'E{n + 2}'] = t.title
-            ws[f'F{n + 2}'] = t.description
+            # ws[f'F{n + 2}'] = t.description
             row = ws.row_dimensions[n + 2]
             if t.completed:
                 row.fill = PatternFill("solid", fgColor="E2FFEC")
@@ -155,7 +155,7 @@ async def excel_task(call: types.CallbackQuery, callback_data: dict):
         tasks_month, start, stop = await get_this_week_month_tasks(chat.chat_id, 'month')
         ws = wb.active
         file_name = f'{chat.title}_Задачи за {start.strftime("%b %Y")}.xlsx'
-        for n, col in enumerate(['A', 'B', 'C', 'D', 'E', 'F']):
+        for n, col in enumerate(['A', 'B', 'C', 'D', 'E']):
             ws[f'{col}1'] = list_column[n]
             ws.column_dimensions[col].width = list_width[n]
         row = ws.row_dimensions[1]
@@ -166,7 +166,7 @@ async def excel_task(call: types.CallbackQuery, callback_data: dict):
             ws[f'C{n + 2}'] = t.for_user[0].user.name
             ws[f'D{n + 2}'] = t.date_end.strftime("%d.%m.%Y") if t.date_end else ''
             ws[f'E{n + 2}'] = t.title
-            ws[f'F{n + 2}'] = t.description
+            # ws[f'F{n + 2}'] = t.description
             row = ws.row_dimensions[n + 2]
             if t.completed:
                 row.fill = PatternFill("solid", fgColor="E2FFEC")
@@ -185,7 +185,7 @@ async def excel_task(call: types.CallbackQuery, callback_data: dict):
             ws = wb.create_sheet(f'{start.strftime("%d.%m.%Y")} - '
                                  f'{(stop - datetime.timedelta(days=1)).strftime("%d.%m.%Y")}')
 
-            for n, col in enumerate(['A', 'B', 'C', 'D', 'E', 'F']):
+            for n, col in enumerate(['A', 'B', 'C', 'D', 'E']):
                 ws[f'{col}1'] = list_column[n]
                 ws.column_dimensions[col].width = list_width[n]
             row = ws.row_dimensions[1]
@@ -198,7 +198,7 @@ async def excel_task(call: types.CallbackQuery, callback_data: dict):
                 ws[f'C{n + 2}'] = t.for_user[0].user.name
                 ws[f'D{n + 2}'] = t.date_end.strftime("%d.%m.%Y") if t.date_end else ''
                 ws[f'E{n + 2}'] = t.title
-                ws[f'F{n + 2}'] = t.description
+                # ws[f'F{n + 2}'] = t.description
                 row = ws.row_dimensions[n + 2]
                 if t.completed:
                     row.fill = PatternFill("solid", fgColor="E2FFEC")
@@ -226,7 +226,7 @@ async def my_excel_task(call: types.CallbackQuery):
     user = await get_user(call.from_user.id)
     list_tfu = []
     for i in await get_task_for_user(call.from_user.id):
-        list_tfu.append([i.task.chat.title, i.task.date_end, i.task.title, i.task_id, i.task.user_create.name, i.task.description, i.task.completed])
+        list_tfu.append([i.task.chat.title, i.task.date_end, i.task.title, i.task_id, i.task.user_create.name, i.task.completed])
     list_tfu.sort()
     wb = Workbook()
     sheet = list_tfu[0][0]
@@ -237,7 +237,7 @@ async def my_excel_task(call: types.CallbackQuery):
                 sheet = i[0]
                 num = 2
                 ws = wb.create_sheet(sheet)
-                for n, col in enumerate(['A', 'B', 'C', 'D', 'E']):
+                for n, col in enumerate(['A', 'B', 'C', 'D']):
                     ws[f'{col}1'] = list_column[n]
                     ws.column_dimensions[col].width = list_width[n]
                 row = ws.row_dimensions[1]
@@ -246,7 +246,7 @@ async def my_excel_task(call: types.CallbackQuery):
             ws[f'B{num}'] = i[4]
             ws[f'C{num}'] = i[1].strftime("%d.%m.%Y")
             ws[f'D{num}'] = i[2]
-            ws[f'E{num}'] = i[5]
+            # ws[f'E{num}'] = i[5]
             row = ws.row_dimensions[num]
             if i[6]:
                 row.fill = PatternFill("solid", fgColor="E2FFEC")

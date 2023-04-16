@@ -21,6 +21,7 @@ cb_all_tasks = CallbackData('all_task', 'chat_id')  # id чата для пол�
 cb_edit_task = CallbackData('edit_task', 'task_id')  # id задачи для редактирования
 cb_type_edit_task = CallbackData('type_edit_task', 'task_id', 'type_edit', 'page')  # id задачи и тип редактирования
 cb_add_user_task = CallbackData('add_user_task', 'task_id', 'user_id', 'page')  # id задачи и id пользователя для добавления исполнителя
+cb_user_delete = CallbackData('user_delete', 'user_id')  # id пользователя для удаления
 cb_new_task_user = CallbackData('new_task_user', 'user_id') # id пользователя исполнителя новой задачи для cmd
 cb_page_list_task = CallbackData('page_list_task', 'chat_id', 'page') # номер страницы для списка задач
 
@@ -78,6 +79,9 @@ class TaskStates(StatesGroup):
 
     DELETE_TASK = State()
     DONE_TASK = State()
+
+    TIME_TASK = State()
+    USER_DELETE = State()
 
 
 

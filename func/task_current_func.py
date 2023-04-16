@@ -25,7 +25,7 @@ async def add_new_task_cmd(chat_id, user_id, task_data, for_user_id):
         date_create=datetime.datetime.now(tz=tz),
         date_edit=datetime.datetime.now(tz=tz),
         title=task_data['title'],
-        description=task_data['description'],
+        # description=task_data['description'],
         date_end=task_data['date_end']
     )
     session.add(new_task)
@@ -48,7 +48,7 @@ async def add_new_task_bot(user_id, task_data, for_user_id):
         date_create=datetime.datetime.now(tz=tz),
         date_edit=datetime.datetime.now(tz=tz),
         title=task_data['title_bot'],
-        description=task_data['description_bot'],
+        # description=task_data['description_bot'],
         date_end=task_data['date_end_bot']
     )
     session.add(new_task)
@@ -126,6 +126,7 @@ async def create_kb_task(task, user_id, page=0, description=False):
 async def edit_complete(task, completed):
     session.query(Task).filter(Task.id == task.id).update({'completed': completed, 'date_complete':
         datetime.datetime.now(tz=tz), 'date_edit': datetime.datetime.now(tz=tz)}, synchronize_session='fetch')
+    session.query(TimeReminder).filter(TimeReminder.task_id == task.id).delete()
     session.commit()
 
 
@@ -182,6 +183,17 @@ async def create_kb_new_task_user(chat_id):
 
 
 @logger.catch
+async def create_kb_user_delete(chat_id):
+    kb_user_delete = InlineKeyboardMarkup(row_width=1)
+    chat = await get_chat(chat_id)
+    for part in chat.participants:
+        kb_user_delete.insert(InlineKeyboardButton(text=part.user.name,
+                                                     callback_data=cb_user_delete.new(user_id=part.user.t_id)))
+    kb_user_delete.insert(btn_cancel)
+    return kb_user_delete
+
+
+@logger.catch
 async def get_list_user_id_task(task):
     return [i.user.t_id for i in task.for_user]
 
@@ -220,8 +232,14 @@ async def check_show_chat(task):
 
 @logger.catch
 async def create_mes_task_to_chat(task):
-    mes = f'<b><u>ДОБАВЛЕНО ({task.id})</u></b>'
-    mes += await create_mes_task_for_chat(task)
+    mes = emojize(f':green_circle: <b>{task.title}</b> ({task.id})\n<i>(срок - {task.date_end.strftime("%d.%m.%Y")})</i>')
+    return mes
+
+
+@logger.catch
+async def create_mes_task_to_user(task):
+    mes = emojize(f':green_circle: <b>{task.title}</b> ({task.id})\n<i>(чат - {task.chat.title})</i>\n<i>(срок - '
+                  f'{task.date_end.strftime("%d.%m.%Y")})</i>')
     return mes
 
 
@@ -239,3 +257,19 @@ async def create_mes_task_for_chat(task):
 async def update_show_chat(task):
     session.query(Task).filter(Task.id == task.id).update({'show_chat': True}, synchronize_session='fetch')
     session.commit()
+
+
+@logger.catch
+async def add_time_reminder(task_id, time):
+    new_time = datetime.time(hour=int(time.split('-')[0]), minute=int(time.split('-')[1]))
+    new_reminder = TimeReminder(task_id=task_id, time_reminder=new_time)
+    session.add(new_reminder)
+    session.commit()
+
+    if new_time > datetime.datetime.now().time():
+        now = datetime.datetime.now()
+        target_time = datetime.datetime(now.year, now.month, now.day, new_time.hour, new_time.minute, 0)
+        delta = target_time - now
+        seconds = delta.total_seconds()
+        tasks = [asyncio.create_task(create_reminder(seconds, await get_task(task_id)))]
+        await asyncio.gather(*tasks)

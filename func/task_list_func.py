@@ -62,8 +62,9 @@ async def create_show_chat_for_tasks_kb(user):
 
 @logger.catch
 async def del_task_by_id(task_id):
-    session.query(Task).filter(Task.id == task_id).delete()
     session.query(TaskForUser).filter(TaskForUser.task_id == task_id).delete()
+    session.query(TimeReminder).filter(TimeReminder.task_id == task_id).delete()
+    session.query(Task).filter(Task.id == task_id).delete()
     session.commit()
 
 

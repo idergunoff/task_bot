@@ -61,22 +61,25 @@ async def new_task(call: types.CallbackQuery, callback_data: dict, state: FSMCon
 @dp.message_handler(state=TaskStates.NEW_TASK_TITLE_BOT)
 @logger.catch
 async def new_task_title(msg: types.Message, state: FSMContext):
-    await TaskStates.NEW_TASK_DESC_BOT.set()
-    await state.update_data(title_bot=msg.text)
-    await bot.send_message(msg.from_user.id, 'Отправь описание задачи. Для отмены добавления задачи отправь /cancel')
-    logger.info(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" SEND title bot')
-
-
-@dp.message_handler(state=TaskStates.NEW_TASK_DESC_BOT)
-@logger.catch
-async def new_task_desc(msg: types.Message, state: FSMContext):
     await TaskStates.NEW_TASK_DATE_BOT.set()
-    await state.update_data(description_bot=msg.text)
+    await state.update_data(title_bot=msg.text)
     await bot.send_message(
         msg.from_user.id,
         'Отправь срок выполнения задачи в формате "<i>01.01.2023</i>". Для отмены добавления задачи отправь /cancel'
     )
-    logger.info(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" SEND description bot')
+    logger.info(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" SEND title bot')
+
+
+# @dp.message_handler(state=TaskStates.NEW_TASK_DESC_BOT)
+# @logger.catch
+# async def new_task_desc(msg: types.Message, state: FSMContext):
+#     await TaskStates.NEW_TASK_DATE_BOT.set()
+#     await state.update_data(description_bot=msg.text)
+#     await bot.send_message(
+#         msg.from_user.id,
+#         'Отправь срок выполнения задачи в формате "<i>01.01.2023</i>". Для отмены добавления задачи отправь /cancel'
+#     )
+#     logger.info(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" SEND description bot')
 
 
 @dp.message_handler(state=TaskStates.NEW_TASK_DATE_BOT)
@@ -127,6 +130,7 @@ async def new_task_user(call: types.CallbackQuery, state: FSMContext, callback_d
     await state.finish()
     await bot.send_message(call.from_user.id, f'Задача <b><u>{new_task.title}</u></b> успешно добавлена!')
     await bot.send_message(new_task.chat_id, await create_mes_task_to_chat(new_task))
+    await bot.send_message(callback_data['user_id'], await create_mes_task_to_user(new_task))
     await update_show_chat(new_task)
     await call.answer()
     await call.message.delete()

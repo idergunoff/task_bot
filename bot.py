@@ -56,7 +56,6 @@ async def superadmin(msg: types.Message):
 #     await bot.send_message(msg.from_user.id, 'Раздел "Проекты" находится в разаботке')
 
 
-
 @dp.message_handler(commands=['task9'])
 @logger.catch
 async def send_notice_tasks_9(msg: types.Message):
@@ -110,10 +109,10 @@ async def send_notice_tasks_9(msg: types.Message):
                             await bot.send_message(user_tasks[0].task.chat.chat_id, mes)
                             logger.error(f'USER "{user.t_id} - {user.name}" NOT START')
                         except BotBlocked:
-                            mes = f'Бот не может отправить пользователю <b>{user.name}</b> сообщение. Если ' \
-                                  f'пользователь больше не планирует пользоваться данным ботом, необходимо удалить ' \
-                                  f'назначенные ему задачи, чтобы не получать это сообщение.'
-                            await bot.send_message(user_tasks[0].task.chat.chat_id, mes)
+                            mes = f'Пользователь <b>{user.name}</b> заблокировал бот, поэтому бот не может отправить ' \
+                                  f'ему сообщение. Если пользователь больше не планирует пользоваться данным ботом, ' \
+                                  f'необходимо удалить назначенные ему задачи, чтобы не получать это сообщение.'
+                            await bot.send_message(user_tasks[-1].task.chat.chat_id, mes)
                             logger.error(f'USER "{user.t_id} - {user.name}" BOT BLOCKED')
         await asyncio.sleep(86400)
 
@@ -156,7 +155,44 @@ async def send_notice_tasks_16(msg: types.Message):
                                   f'<b>{user.name}</b> необходимо перейти в бот (/bot) и нажать старт.'
                             await bot.send_message(user_tasks[0].task.chat.chat_id, mes)
                             logger.error(f'USER "{user.t_id} - {user.name}" NOT START')
+                        except BotBlocked:
+                            mes = f'Пользователь <b>{user.name}</b> заблокировал бот, поэтому бот не может отправить ' \
+                                  f'ему сообщение. Если пользователь больше не планирует пользоваться данным ботом, ' \
+                                  f'необходимо удалить назначенные ему задачи, чтобы не получать это сообщение.'
+                            await bot.send_message(user_tasks[-1].task.chat.chat_id, mes)
+                            logger.error(f'USER "{user.t_id} - {user.name}" BOT BLOCKED')
         await asyncio.sleep(86400)
+
+
+@dp.message_handler(commands=['start_timer'])
+@logger.catch
+async def timer(msg: types.Message):
+    logger.info(f'USER "{msg.from_user.id} - {await get_username_msg(msg)}" START TIMER')
+    tasks = []
+    for remind in session.query(TimeReminder).all():
+        if remind.time_reminder > datetime.datetime.now().time():
+            seconds = await get_time_delay(remind.time_reminder.hour, remind.time_reminder.minute)
+            tasks.append(asyncio.create_task(create_reminder(seconds, remind.task)))
+    if datetime.time(hour=8) > datetime.datetime.now().time():
+        tasks.append(asyncio.create_task(send_unexecuted_tasks(await get_time_delay(8, 0))))
+    await asyncio.gather(*tasks)
+    now = datetime.datetime.now()
+    midnight = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    seconds_since_midnight = (now - midnight).total_seconds()
+    await asyncio.sleep(86400 - seconds_since_midnight)
+    while True:
+        if datetime.datetime.now(tz=tz).weekday() not in [5, 6]:
+            tasks = []
+            for remind in session.query(TimeReminder).all():
+                if remind.time_reminder > datetime.datetime.now().time():
+                    seconds = await get_time_delay(remind.time_reminder.hour, remind.time_reminder.minute)
+                    tasks.append(asyncio.create_task(create_reminder(seconds, remind.task)))
+            tasks.append(asyncio.create_task(send_unexecuted_tasks(await get_time_delay(8, 0))))
+            await asyncio.gather(*tasks)
+        now = datetime.datetime.now()
+        midnight = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        seconds_since_midnight = (now - midnight).total_seconds()
+        await asyncio.sleep(86400 - seconds_since_midnight)
 
 
 @dp.message_handler(commands=['t'])

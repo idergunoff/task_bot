@@ -1,6 +1,6 @@
 import datetime
 
-from sqlalchemy import create_engine, Column, Integer, BigInteger, String, DateTime, Text, Boolean, ForeignKey, Float, func, desc, or_
+from sqlalchemy import create_engine, Column, Integer, BigInteger, String, DateTime, Text, Boolean, ForeignKey, Time, Float, func, desc, or_
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 
@@ -55,7 +55,7 @@ class Task(Base):
     id = Column(Integer, primary_key=True)
     chat_id = Column(BigInteger, ForeignKey('chat.chat_id'))
     title = Column(String)
-    description = Column(Text)
+    description = Column(Text)  # todo remove description
     date_create = Column(DateTime)
     date_edit = Column(DateTime)
     date_end = Column(DateTime)
@@ -69,6 +69,7 @@ class Task(Base):
     chat = relationship('Chat', back_populates='tasks')
     user_create = relationship('User', back_populates='task_create')
     for_user = relationship('TaskForUser', back_populates='task')
+    time_reminders = relationship('TimeReminder', back_populates='task')
 
 
 class TaskForUser(Base):
@@ -80,6 +81,16 @@ class TaskForUser(Base):
 
     task = relationship('Task', back_populates='for_user')
     user = relationship('User', back_populates='task_for')
+
+
+class TimeReminder(Base):
+    __tablename__ = 'time_reminder'
+
+    id = Column(Integer, primary_key=True)
+    task_id = Column(Integer, ForeignKey('task.id'))
+    time_reminder = Column(Time)
+
+    task = relationship('Task', back_populates='time_reminders')
 
 
 Base.metadata.create_all(engine)
